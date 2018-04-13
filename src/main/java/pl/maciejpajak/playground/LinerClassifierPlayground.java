@@ -8,61 +8,45 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Arrays;
 
 public class LinerClassifierPlayground {
-
+    
     public static double f(INDArray x, int correctClass, INDArray W) {
-        System.out.println();
-
         INDArray dot = W.mmul(x.transpose());
-        System.out.println(dot);
 
         double delta = 1.0;
         INDArray margins = Transforms.max(dot.sub(dot.getDouble(correctClass)).add(delta), 0);
         margins.putScalar(correctClass, 0.0);
-        System.out.println(margins);
 
         return margins.sumNumber().doubleValue();
     }
 
+    /**
+     * SVM loss function without regularization. Fully vectorized implementation.
+     *
+     * Based on Stanford cs231n course.
+     *
+     * @param W - weights (e.g. 10 x 3073)
+     * @param y - array of integers specifying correct class (e.g. 50,000-D array)
+     * @param x - holds all the training examples as columns (e.g. 3073 x 50,000 in CIFAR-10)
+     * @return - loss
+     */
     public static double L(INDArray W, INDArray y, INDArray x) {
-        /*
-        fully-vectorized implementation :
-        - X holds all the training examples as columns (e.g. 3073 x 50,000 in CIFAR-10)
-        - y is array of integers specifying correct class (e.g. 50,000-D array)
-        - W are weights (e.g. 10 x 3073)
-        */
-
         // W * x
         INDArray dot = W.mmul(x);
-
-        System.out.println(dot);
-        System.out.println(dot.transpose());
-        System.out.println("W " + Arrays.toString(W.shape()));
-        System.out.println("x " + Arrays.toString(x.shape()));
-        System.out.println("dot " + Arrays.toString(dot.shape()));
 
         // indexes of scores of correct classes in dot array
         INDArray indexesArray = Nd4j.linspace(0, x.size(1) - 1, x.size(1))
                                         .mul(dot.size(0))
                                         .add(y);
 
-        System.out.println(indexesArray);
-
         // vector with corect class score for each training example
         INDArray correctClassScore = Nd4j.toFlattened(dot.transpose()).get(new SpecifiedIndex(indexesArray.data().asInt()));
 
-        System.out.println(correctClassScore);
         double delta = 1.0;
-        System.out.println("======");
-        System.out.println(dot.transpose().subColumnVector(correctClassScore));
 
         INDArray margins = Transforms.max(dot.transpose().subColumnVector(correctClassScore).add(delta),0);
 
-        System.out.println(margins);
-//        INDArray m;
-//        INDArray these_indexes = Nd4j.linspace(0, m.size(0)-1, m.size(0)).mul(mn.size(1)).add(m.transpose());
-//        INDArray result = Nd4j.toFlattened(mn).get(new SpecifiedIndex(these_indexes.data().asInt())).transpose();
         double loss = (margins.sumNumber().doubleValue() - y.size(1) * delta);
-        System.out.println(loss);
+
         return loss;
 
     }
@@ -85,10 +69,6 @@ public class LinerClassifierPlayground {
         System.out.println(W);
         System.out.println(L(W, y, x));
 
-//        System.out.println(W.sumNumber());
-//        System.out.println(x);
-//        System.out.println(W);
-//        System.out.println("loss = " + f(x, 1, W));
     }
 
 }

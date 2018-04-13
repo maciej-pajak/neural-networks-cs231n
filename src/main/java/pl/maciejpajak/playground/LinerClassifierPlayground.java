@@ -54,7 +54,7 @@ public class LinerClassifierPlayground {
         double delta = 1.0;
         System.out.println("======");
         System.out.println(dot.transpose().subColumnVector(correctClassScore));
-        
+
         INDArray margins = Transforms.max(dot.transpose().subColumnVector(correctClassScore).add(delta),0);
 
         System.out.println(margins);
@@ -63,7 +63,7 @@ public class LinerClassifierPlayground {
 //        INDArray result = Nd4j.toFlattened(mn).get(new SpecifiedIndex(these_indexes.data().asInt())).transpose();
         double loss = (margins.sumNumber().doubleValue() - y.size(1) * delta);
         System.out.println(loss);
-    return 0;
+        return loss;
 
     }
 

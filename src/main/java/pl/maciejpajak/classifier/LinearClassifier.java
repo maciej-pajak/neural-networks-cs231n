@@ -9,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -46,14 +47,10 @@ public class LinearClassifier {
                                                             LossFunction lossFunction) {
         int samples = trainingSet.size(0);
         int sampleDimensions = trainingSet.size(1);
+        int numClasses = trainingLabels.maxNumber().intValue() + 1; // assume y takes values 0...K-1 where K is number of classes
 
-        INDArray weights = Nd4j.create(0,0);
-        //    num_train, dim = X.shape
-        //            num_classes = np.max(y) + 1 # assume y takes values 0...K-1 where K is number of classes
-        //    if self.W is None:
-        //            # lazily initialize W
-        //    self.W = 0.001 * np.random.randn(dim, num_classes)
-        //
+        // initialize weights
+        INDArray weights = Nd4j.randn(sampleDimensions, numClasses).mul(0.001);
 
         // Run stochastic gradient descent to optimize W
 
@@ -61,7 +58,7 @@ public class LinearClassifier {
         INDArray batchLabels;
         int[] randomIndexes;
 
-        for (int i = 0 ; i < iterations ; i++) {
+        for (int i = 1 ; i <= iterations ; i++) {
 
             // sample batchSet and corrresponding labels for current iteration
             randomIndexes = createRandomArray(samples, batchSize);
@@ -69,14 +66,14 @@ public class LinearClassifier {
             batchLabels = trainingLabels.getRows(randomIndexes);
 
             // evaluate loss and gradient
-            // Pair<Double, INDArray> lossAndGradient = lossFunction.loss(...);
+            Pair<Double, INDArray> lossAndGradient = lossFunction.loss(batchSet, batchLabels, weights, reg);
 
-            // double loss;
             // perform parameter update
+            weights.subi(lossAndGradient.getValue().mul(learningRate));
 
             // Update the weights using the gradient and the learning rate.
             if (iterations % 100 == 0) {
-               // LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, loss));
+               LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
             }
         }
 

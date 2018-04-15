@@ -2,8 +2,13 @@ package pl.maciejpajak.classifier;
 
 import javafx.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.DefaultRandom;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 /**
@@ -39,6 +44,8 @@ public class LinearClassifier {
     public static LinearClassifier trainNewLinearClassifier(INDArray trainingSet, INDArray trainingLabels,
                                                             double learningRate, double reg, int iterations, int batchSize,
                                                             LossFunction lossFunction) {
+        int samples = trainingSet.size(0);
+        int sampleDimensions = trainingSet.size(1);
 
         INDArray weights = Nd4j.create(0,0);
         //    num_train, dim = X.shape
@@ -52,20 +59,14 @@ public class LinearClassifier {
 
         INDArray batchSet;
         INDArray batchLabels;
+        int[] randomIndexes;
 
         for (int i = 0 ; i < iterations ; i++) {
 
-            // batchSet =
-            // batchLabels =
-
-            //            # Sample batch_size elements from the training data and their           #
-            //            # corresponding labels to use in this round of gradient descent.        #
-            //            # Store the data in X_batch and their corresponding labels in           #
-            //            # y_batch; after sampling X_batch should have shape (dim, batch_size)   #
-            //            # and y_batch should have shape (batch_size,)                           #
-            //            #                                                                       #
-            //            # Hint: Use np.random.choice to generate indices. Sampling with         #
-            //            # replacement is faster than sampling without replacement.              #
+            // sample batchSet and corrresponding labels for current iteration
+            randomIndexes = createRandomArray(samples, batchSize);
+            batchSet = trainingSet.getRows(randomIndexes);
+            batchLabels = trainingLabels.getRows(randomIndexes);
 
             // evaluate loss and gradient
             // Pair<Double, INDArray> lossAndGradient = lossFunction.loss(...);
@@ -118,6 +119,10 @@ public class LinearClassifier {
          * @return - a pair where the key is loss and value is loss gradient with respect to weights W (shape N x D)
          */
         abstract Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg);
+    }
+
+    private static int[] createRandomArray(int upperBound, int arraySize) {
+        return ThreadLocalRandom.current().ints(0, upperBound).distinct().limit(arraySize).toArray();
     }
 
 }

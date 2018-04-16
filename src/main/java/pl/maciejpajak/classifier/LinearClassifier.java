@@ -2,11 +2,8 @@ package pl.maciejpajak.classifier;
 
 import javafx.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.DefaultRandom;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
@@ -94,13 +91,53 @@ public class LinearClassifier {
     public enum LossFunction {
         SVM {
             @Override
-            Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
-                return null;
+            public Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
+                throw new UnsupportedOperationException("Not yet implemented");
+            }
+        },
+        SVM_NAIVE {
+            @Override
+            public Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
+                int numClasses = weights.size(1);
+                int samples = batchSet.size(0);
+
+                INDArray dW = Nd4j.zeros(weights.shape());
+
+                double loss = 0;
+                INDArray scores;
+                double correctClassScore;
+                double margin;
+
+                // compute loss and gradient
+                for (int i = 0 ; i < samples ; i++) {
+                    scores = batchSet.getRow(i).mmul(weights);
+                    correctClassScore = scores.getDouble(batchLabels.getInt(i));
+
+                    for (int j = 0 ; j < numClasses ; j++) {
+                        if (j == batchLabels.getInt(i)) continue;
+                        margin = scores.getDouble(j) - correctClassScore + 1;
+                        if (margin > 0) {
+                            loss += margin;
+                            dW.getColumn(batchLabels.getInt(j)).subi(batchSet.getRow(i).transpose());
+                            dW.getColumn(j).addi(batchSet.getRow(i).transpose());
+                        }
+                    }
+                }
+
+                // average over all examples
+                loss /= samples;
+                dW.divi(samples);
+
+                // add regularization
+                loss += reg * Transforms.pow(weights, 2).sumNumber().doubleValue();
+                dW.addi(weights.mul(2 * reg));
+
+                return new Pair<>(loss, dW);
             }
         },
         SOFTMAX {
             @Override
-            Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
+            public Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
                 throw new UnsupportedOperationException("Not yet implemented");
             }
         };
@@ -115,7 +152,7 @@ public class LinearClassifier {
          *
          * @return - a pair where the key is loss and value is loss gradient with respect to weights W (shape N x D)
          */
-        abstract Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg);
+        public abstract Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg);
     }
 
     private static int[] createRandomArray(int upperBound, int arraySize) {

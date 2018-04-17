@@ -24,4 +24,18 @@ public final class Nd4jHelper {
         }
         return result;
     }
+
+    public static void putValues(INDArray destination, INDArray columnIndices, INDArray values) {
+        int rowsCount = destination.size(0);
+        for (int i = 0 ; i < rowsCount ; i++) {
+            destination.putScalar(i, columnIndices.getInt(0, i), values.getDouble(i, 0));
+        }
+    }
+
+    public static void putScalar(INDArray destination, INDArray columnIndices, double value) {
+        int rowsCount = destination.size(0);
+        for (int i = 0 ; i < rowsCount ; i++) {
+            destination.putScalar(i, columnIndices.getInt(0, i), value);
+        }
+    }
 }

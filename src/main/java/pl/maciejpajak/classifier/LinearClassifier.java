@@ -81,8 +81,8 @@ public class LinearClassifier {
      * Predicts lables for input data based on learned weights.
      *
      * @param dataSet - array of shape N x D containing training data (N training samples each of dimension D)
-     * @return - Predicted labels for the data in X. y_pred is a 1-dimensional array of length N,
-     *          and each element is an integer giving the predicted class.
+     * @return - Predicted labels for the data in X. Returns 1-dimensional array of length N,
+     *          where each element is an integer giving the predicted class.
      */
     public INDArray predict(INDArray dataSet) {
         throw new UnsupportedOperationException("Not yet implemented");
@@ -92,7 +92,38 @@ public class LinearClassifier {
         SVM {
             @Override
             public Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
-                throw new UnsupportedOperationException("Not yet implemented");
+
+                double loss;
+                INDArray dW;
+                int samples = batchSet.size(0);
+
+                // X * W
+                INDArray scores = batchSet.mmul(weights);
+                INDArray correctClassesScore = Nd4jHelper.getSpecifiedElements(scores, batchLabels);
+                INDArray margins = Transforms.max(scores.subColumnVector(correctClassesScore).add(1.0),0);
+
+                loss = margins.sumNumber().doubleValue() - samples;
+                loss /= samples;
+
+                // gradient ==============================================
+                INDArray binary = margins.gt(0);
+
+                // set correct class binary to 0
+                Nd4jHelper.putScalar(binary, batchLabels, 0);
+                INDArray rowSums = binary.sum(1);
+
+                // set correct class coefficint to -rowSums
+                Nd4jHelper.putValues(binary, batchLabels, rowSums.mul(-1));
+
+                dW = batchSet.transpose().mmul(binary);
+
+                // average
+                dW.divi(samples);
+
+                // regularization
+                dW.addi(weights.mul(2 * reg));
+
+                return new Pair<>(loss, dW);
             }
         },
         SVM_NAIVE {
@@ -118,12 +149,11 @@ public class LinearClassifier {
                         margin = scores.getDouble(j) - correctClassScore + 1;
                         if (margin > 0) {
                             loss += margin;
-                            dW.getColumn(batchLabels.getInt(j)).subi(batchSet.getRow(i).transpose());
+                            dW.getColumn(batchLabels.getInt(i)).subi(batchSet.getRow(i).transpose());
                             dW.getColumn(j).addi(batchSet.getRow(i).transpose());
                         }
                     }
                 }
-
                 // average over all examples
                 loss /= samples;
                 dW.divi(samples);
@@ -146,7 +176,7 @@ public class LinearClassifier {
          * Compute the loss function and its derivative.
          *
          * @param batchSet - array of shape N x D containing a minibatch of N data points, each point has dimension D.
-         * @param batchLabels - array of shape (N,) containing labels for the minibatch.
+         * @param batchLabels - row vector of length N containing labels for the minibatch.
          * @param weights - array of shape D x C containing weights.
          * @param reg - regularization strength
          *

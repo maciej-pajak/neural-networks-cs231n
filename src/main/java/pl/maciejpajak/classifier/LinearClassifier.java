@@ -10,7 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Linear classifier implementation.
+ * Simple linear classifier implementation.
  * Based on Stanford cs231n course.
  */
 public class LinearClassifier {
@@ -85,6 +85,11 @@ public class LinearClassifier {
      *          where each element is an integer giving the predicted class.
      */
     public INDArray predict(INDArray dataSet) {
+
+        INDArray scores = dataSet.mmul(weights);
+
+        INDArray bestScores = scores.argMax(1);
+
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

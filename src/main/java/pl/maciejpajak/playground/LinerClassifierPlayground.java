@@ -40,6 +40,7 @@ public class LinerClassifierPlayground {
 
         // vector with corect class score for each training example
         INDArray correctClassScore = Nd4j.toFlattened(dot.transpose()).get(new SpecifiedIndex(indexesArray.data().asInt()));
+        System.out.println(correctClassScore);
 
         double delta = 1.0;
 

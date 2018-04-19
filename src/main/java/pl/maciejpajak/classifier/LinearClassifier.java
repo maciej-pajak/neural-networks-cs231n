@@ -68,12 +68,11 @@ public class LinearClassifier {
             // perform parameter update
             weights.subi(lossAndGradient.getValue().mul(learningRate));
 
-            // test
-            INDArray bestScore = Nd4j.hstack(trainingSet, Nd4j.ones(samples,1)).mmul(weights).argMax(1);
-
             // Update the weights using the gradient and the learning rate.
             if (iterations % 100 == 0) {
-               LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
+                INDArray bestScore = Nd4j.hstack(trainingSet, Nd4j.ones(samples,1)).mmul(weights).argMax(1);
+                double acc = bestScore.eq(trainingLabels).sumNumber().doubleValue() / samples;
+                LOG.log(Level.INFO, String.format("iteration %d / %d: accuracy %f ; loss %f", i, iterations, acc, lossAndGradient.getKey()));
             }
         }
 

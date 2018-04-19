@@ -68,6 +68,9 @@ public class LinearClassifier {
             // perform parameter update
             weights.subi(lossAndGradient.getValue().mul(learningRate));
 
+            // test
+            INDArray bestScore = Nd4j.hstack(trainingSet, Nd4j.ones(samples,1)).mmul(weights).argMax(1);
+
             // Update the weights using the gradient and the learning rate.
             if (iterations % 100 == 0) {
                LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
@@ -188,6 +191,44 @@ public class LinearClassifier {
          * @return - a pair where the key is loss and value is loss gradient with respect to weights W (shape N x D)
          */
         public abstract Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg);
+
+        /**
+         * Calculates gradient of loss function with respect to weights using numerical method.
+         *
+         * @param lossFunction - loss function
+         * @param batchSet - lossFunction argument - array of shape N x D containing a minibatch of N data points, each point has dimension D.
+         * @param batchLabels - lossFunction argument - row vector of length N containing labels for the minibatch.
+         * @param weights - lossFunction argument - array of shape D x C containing weights.
+         * @param reg - lossFunction argument - regularization strength
+         * @param h - delta weight
+         *
+         * @return - gradient array
+         */
+        public static INDArray numericalGradient(LossFunction lossFunction, INDArray batchSet, INDArray batchLabels, INDArray weights, double reg, double h) {
+            INDArray dW = Nd4j.zeros(weights.shape());
+
+            double lossPos;
+            double lossNeg;
+            double grad;
+
+            double tmp;
+
+            for (int i = 0 ; i < weights.rows() ; i++) {
+                for (int j = 0 ; j < weights.columns() ; j++) {
+                    tmp = weights.getDouble(i, j);
+                    weights.putScalar(i, j, tmp - h);
+                    lossNeg = lossFunction.loss(batchSet, batchLabels, weights, reg).getKey();
+                    weights.putScalar(i, j, tmp + h);
+                    lossPos = lossFunction.loss(batchSet, batchLabels, weights, reg).getKey();
+                    weights.putScalar(i, j, tmp);
+
+                    grad = (lossPos - lossNeg) / (2 * h);
+                    dW.putScalar(i, j, grad);
+                }
+            }
+
+            return dW;
+        }
     }
 
     private static int[] createRandomArray(int upperBound, int arraySize) {

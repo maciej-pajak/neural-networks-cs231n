@@ -52,7 +52,7 @@ public class LinearClassifier {
     public static LinearClassifier trainNewLinearClassifier(INDArray trainingSet, INDArray trainingLabels,
                                                             double learningRate, double reg, int iterations, int batchSize,
                                                             LossFunction lossFunction) {
-        final int loggingRate = 100;
+        final int loggingRate = 10;
         INDArray learningHistory = Nd4j.create(iterations / loggingRate, 3); // for learning analysis
 
         int samples = trainingSet.size(0);
@@ -101,11 +101,11 @@ public class LinearClassifier {
      */
     public INDArray predict(INDArray dataSet) {
 
-        INDArray scores = dataSet.mmul(weights);
+        INDArray scores = Nd4j.hstack(dataSet, Nd4j.ones(dataSet.rows(), 1)).mmul(weights);
 
         INDArray bestScores = scores.argMax(1);
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        return bestScores;
     }
 
     public enum LossFunction {

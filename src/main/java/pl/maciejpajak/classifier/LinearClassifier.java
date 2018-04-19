@@ -1,6 +1,9 @@
 package pl.maciejpajak.classifier;
 
 import javafx.util.Pair;
+import org.knowm.xchart.SwingWrapper;
+import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYChartBuilder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -17,12 +20,19 @@ public class LinearClassifier {
 
     private final static Logger LOG = Logger.getLogger(LinearClassifier.class.getName());
 
-    private INDArray weights;
-    private LossFunction lossFunction;
+    private final INDArray weights;
+    private final LossFunction lossFunction;
 
-    private LinearClassifier(INDArray weights, LossFunction lossFunction) {
+    private final INDArray learningHistory;
+
+//    private LinearClassifier(INDArray weights, LossFunction lossFunction) {
+//        this(weights, lossFunction, null);
+//    }
+
+    private LinearClassifier(INDArray weights, LossFunction lossFunction, INDArray learningHistory) {
         this.weights = weights;
         this.lossFunction = lossFunction;
+        this.learningHistory = learningHistory;
     }
 
     /**
@@ -42,6 +52,9 @@ public class LinearClassifier {
     public static LinearClassifier trainNewLinearClassifier(INDArray trainingSet, INDArray trainingLabels,
                                                             double learningRate, double reg, int iterations, int batchSize,
                                                             LossFunction lossFunction) {
+        final int loggingRate = 10;
+        INDArray learningHistory = Nd4j.create(iterations / loggingRate, 3); // for learning analysis
+
         int samples = trainingSet.size(0);
         int sampleDimensions = trainingSet.size(1);
         int numClasses = trainingLabels.maxNumber().intValue() + 1; // assume y takes values 0...K-1 where K is number of classes
@@ -69,14 +82,14 @@ public class LinearClassifier {
             weights.subi(lossAndGradient.getValue().mul(learningRate));
 
             // Update the weights using the gradient and the learning rate.
-            if (iterations % 100 == 0) {
-                INDArray bestScore = Nd4j.hstack(trainingSet, Nd4j.ones(samples,1)).mmul(weights).argMax(1);
-                double acc = bestScore.eq(trainingLabels).sumNumber().doubleValue() / samples;
+            if (i % loggingRate == 0) {
+                INDArray bestScore = batchSet.mmul(weights).argMax(1);
+                double acc = bestScore.eq(batchLabels).sumNumber().doubleValue() / batchSize;
+                learningHistory.putRow(i / loggingRate - 1, Nd4j.create(new double[]{i, acc, lossAndGradient.getKey()}, new int[]{1,3}));
                 LOG.log(Level.INFO, String.format("iteration %d / %d: accuracy %f ; loss %f", i, iterations, acc, lossAndGradient.getKey()));
             }
         }
-
-        return new LinearClassifier(weights, lossFunction);
+        return new LinearClassifier(weights, lossFunction, learningHistory);
     }
 
     /**
@@ -232,6 +245,23 @@ public class LinearClassifier {
 
     private static int[] createRandomArray(int upperBound, int arraySize) {
         return ThreadLocalRandom.current().ints(0, upperBound).distinct().limit(arraySize).toArray();
+    }
+
+    public void printLearningAnalysis() {
+        // Create Chart
+        XYChart chart = new XYChartBuilder().width(600).height(500).title("Learning analysis").xAxisTitle("iteration").yAxisTitle("val").build();
+
+        double[] xIterations = learningHistory.getColumn(0).dup().data().asDouble();
+        double[] yAccuracy = learningHistory.getColumn(1).dup().data().asDouble();
+        double[] yLoss = learningHistory.getColumn(2).div(learningHistory.getColumn(2).maxNumber()).dup().data().asDouble();
+
+
+        // Series
+        chart.addSeries("Accuracy [%]", xIterations, yAccuracy);
+        chart.addSeries("Loss [%  of max loss]", xIterations, yLoss);
+
+
+        new SwingWrapper(chart).displayChart();
     }
 
 }

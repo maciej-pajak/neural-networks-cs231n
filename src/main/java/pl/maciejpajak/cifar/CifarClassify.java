@@ -14,7 +14,8 @@ public class CifarClassify {
     private static final int IMAGES_IN_FILE = 10000;
     private static final int IMAGE_LEN = 3072;
 
-    private CifarClassify() {}
+    private CifarClassify() {
+    }
 
     public static Pair<INDArray, INDArray> getCifarLabelsAndData(File... files) {
         INDArray dataSet = Nd4j.create(IMAGES_IN_FILE * files.length, IMAGE_LEN);
@@ -25,12 +26,12 @@ public class CifarClassify {
             byte[] buffer = new byte[3072];
             for (File f : files) {
                 fis = new FileInputStream(f);
-                for (int j = 0 ; j < IMAGES_IN_FILE ; j++) {
+                for (int j = 0; j < IMAGES_IN_FILE; j++) {
                     lables.putScalar(imgCount, fis.read());
 
                     fis.read(buffer);
 
-                    for (int i = 0 ; i < IMAGE_LEN ; i++) {
+                    for (int i = 0; i < IMAGE_LEN; i++) {
                         dataSet.putScalar(imgCount, i, (double) buffer[i]);
                     }
                     imgCount++;
@@ -61,9 +62,21 @@ public class CifarClassify {
 
         Pair<INDArray, INDArray> trainData = CifarClassify.getCifarLabelsAndData(dataSetsFiles);
 
-//        Pair<INDArray, INDArray> testData = CifarClassify.getCifarLabelsAndData(testDataFile);
+        Pair<INDArray, INDArray> testData = CifarClassify.getCifarLabelsAndData(testDataFile);
 
-        LinearClassifier.trainNewLinearClassifier(trainData.getValue(), trainData.getKey(), 0.00001, 2500, 100, 128, LinearClassifier.LossFunction.SVM);
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainData.getValue(), trainData.getKey(),
+                0.0000001, 5000, 3000, 64, LinearClassifier.LossFunction.SVM);
+
+        // 0.0000001, 2500, 2000, 64
+
+        lc.printLearningAnalysis();
+
+        INDArray predTrain = lc.predict(trainData.getValue());
+        INDArray predTest = lc.predict(testData.getValue());
+
+        System.out.println("train data acc: " + predTrain.eq(trainData.getKey()).sumNumber().doubleValue() / predTrain.length());
+        System.out.println("test data acc: " + predTest.eq(testData.getKey()).sumNumber().doubleValue() / predTest.length());
 
     }
+
 }

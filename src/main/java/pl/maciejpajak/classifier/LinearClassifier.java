@@ -52,7 +52,7 @@ public class LinearClassifier {
     public static LinearClassifier trainNewLinearClassifier(INDArray trainingSet, INDArray trainingLabels,
                                                             double learningRate, double reg, int iterations, int batchSize,
                                                             LossFunction lossFunction) {
-        final int loggingRate = 10;
+        final int loggingRate = 100;
         INDArray learningHistory = Nd4j.create(iterations / loggingRate, 3); // for learning analysis
 
         int samples = trainingSet.size(0);
@@ -124,6 +124,7 @@ public class LinearClassifier {
 
                 loss = margins.sumNumber().doubleValue() - samples;
                 loss /= samples;
+                loss += reg * Transforms.pow(weights, 2).sumNumber().doubleValue();
 
                 // gradient ==============================================
                 INDArray binary = margins.gt(0);

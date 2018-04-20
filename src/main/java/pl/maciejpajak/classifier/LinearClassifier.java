@@ -1,6 +1,7 @@
 package pl.maciejpajak.classifier;
 
 import javafx.util.Pair;
+import org.knowm.xchart.BitmapEncoder;
 import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -248,9 +250,9 @@ public class LinearClassifier {
         return ThreadLocalRandom.current().ints(0, upperBound).distinct().limit(arraySize).toArray();
     }
 
-    public void printLearningAnalysis() {
+    public void saveLearningAnalysis(String fileName) {
         // Create Chart
-        XYChart chart = new XYChartBuilder().width(600).height(500).title("Learning analysis").xAxisTitle("iteration").yAxisTitle("val").build();
+        XYChart chart = new XYChartBuilder().width(600).height(500).title("Learning analysis - " + fileName).xAxisTitle("iteration").yAxisTitle("val").build();
 
         double[] xIterations = learningHistory.getColumn(0).dup().data().asDouble();
         double[] yAccuracy = learningHistory.getColumn(1).dup().data().asDouble();
@@ -261,8 +263,17 @@ public class LinearClassifier {
         chart.addSeries("Accuracy [%]", xIterations, yAccuracy);
         chart.addSeries("Loss [%  of max loss]", xIterations, yLoss);
 
+//        new SwingWrapper(chart).displayChart();
 
-        new SwingWrapper(chart).displayChart();
+        // try to save
+        try {
+            BitmapEncoder.saveBitmap(chart, fileName, BitmapEncoder.BitmapFormat.PNG);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
+    public INDArray getLearningHistory() {
+        return learningHistory;
+    }
 }

@@ -5,9 +5,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import pl.maciejpajak.classifier.LinearClassifier;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class CifarClassify {
 
@@ -64,18 +62,46 @@ public class CifarClassify {
 
         Pair<INDArray, INDArray> testData = CifarClassify.getCifarLabelsAndData(testDataFile);
 
-        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainData.getValue(), trainData.getKey(),
-                0.0000001, 5000, 3000, 64, LinearClassifier.LossFunction.SVM);
+        findBestParams(trainData, testData);
+    }
 
-        // 0.0000001, 2500, 2000, 64
+    private static void findBestParams(Pair<INDArray, INDArray> trainData, Pair<INDArray, INDArray> testData) {
+        double[] learningRates = {0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001};
+        double[] regularization = {0.001, 0.01, 0.1, 1, 10, 100, 500, 1000, 2500, 5000, 10000, 100000};
+        int[] batchSize = {1, 4, 16, 32, 64, 128, 256, 512};
 
-        lc.printLearningAnalysis();
+        try (PrintWriter pw = new PrintWriter(new FileWriter("results.txt", true), true)) {
 
-        INDArray predTrain = lc.predict(trainData.getValue());
-        INDArray predTest = lc.predict(testData.getValue());
+            pw.println("learning_rate, regularization, batchSize, train_acc, test_acc");
 
-        System.out.println("train data acc: " + predTrain.eq(trainData.getKey()).sumNumber().doubleValue() / predTrain.length());
-        System.out.println("test data acc: " + predTest.eq(testData.getKey()).sumNumber().doubleValue() / predTest.length());
+            for (int i = 0 ; i < learningRates.length ; i++) {
+                for (int j = 0 ; j < regularization.length ; j++) {
+                    for (int k = 0 ; k < batchSize.length ; k++) {
+
+                        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainData.getValue(), trainData.getKey(),
+                                learningRates[i], regularization[j], 5000, batchSize[k], LinearClassifier.LossFunction.SVM);
+
+                        // 0.0000001, 2500, 2000, 64
+
+
+                        INDArray predTrain = lc.predict(trainData.getValue());
+                        INDArray predTest = lc.predict(testData.getValue());
+
+                        double trainAcc = predTrain.eq(trainData.getKey()).sumNumber().doubleValue() / predTrain.length();
+                        double testAcc = predTest.eq(testData.getKey()).sumNumber().doubleValue() / predTest.length();
+
+                        pw.println(String.format("%f, %f, %d, %f, %f", learningRates[i], regularization[j], batchSize[k], trainAcc, testAcc));
+
+                        lc.saveLearningAnalysis(String.format("%f-%f-%d", learningRates[i], regularization[j], batchSize[k]));
+                    }
+                }
+            }
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 

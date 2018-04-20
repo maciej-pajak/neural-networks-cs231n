@@ -39,4 +39,12 @@ public final class Nd4jHelper {
             destination.putScalar(i, columnIndices.getInt(i, 0), value);
         }
     }
+
+    public static void addScalar(INDArray destination, INDArray columnIndices, double value) {
+        int rowsCount = destination.size(0);
+        for (int i = 0 ; i < rowsCount ; i++) {
+            destination.getScalar(i, columnIndices.getInt(i, 0)).add(value);
+        }
+    }
+
 }

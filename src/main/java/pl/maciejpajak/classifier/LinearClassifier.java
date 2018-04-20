@@ -191,7 +191,42 @@ public class LinearClassifier {
         SOFTMAX {
             @Override
             public Pair<Double, INDArray> loss(INDArray batchSet, INDArray batchLabels, INDArray weights, double reg) {
-                throw new UnsupportedOperationException("Not yet implemented");
+                double loss;
+                INDArray dW;
+                int samples = batchSet.size(0);
+
+                // X * W
+                INDArray scores = batchSet.mmul(weights);
+
+                // unnormalized probabilities
+                INDArray expScores = Transforms.exp(scores);
+
+                // normalize
+                INDArray probs = expScores.divColumnVector(expScores.sum(1));
+
+                INDArray correctLogProbs = Transforms.log(Nd4jHelper.getSpecifiedElements(probs, batchLabels)).mul(-1);
+
+                // compute the loss - average cross-entropy loss and regularization
+
+                loss = correctLogProbs.sumNumber().doubleValue() / samples;
+                loss += reg * Transforms.pow(weights, 2).sumNumber().doubleValue();
+
+                // gradient ==============================================
+
+                INDArray dScores = probs; // or dup?
+
+                // update correct class probabilities
+                Nd4jHelper.addScalar(dScores, batchLabels, -1.0);
+
+                // average
+                dScores.divi(samples);
+
+                dW = batchSet.transpose().mmul(dScores);
+
+                // regularization
+                dW.addi(weights.mul(2 * reg));
+
+                return new Pair<>(loss, dW);
             }
         };
 

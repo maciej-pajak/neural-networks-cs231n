@@ -2,6 +2,7 @@ package pl.maciejpajak.classifier;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
 
@@ -21,7 +22,7 @@ public final class Nd4jHelper {
         int rowsCount = source.size(0);
         INDArray result = Nd4j.create(rowsCount, 1);
         for (int i = 0 ; i < rowsCount ; i++) {
-            result.put(i, 0, source.getDouble(i, columnIndices.getInt(0, i)));
+            result.put(i, 0, source.getDouble(i, columnIndices.getInt(i, 0)));
         }
         return result;
     }
@@ -43,7 +44,7 @@ public final class Nd4jHelper {
     public static void addScalar(INDArray destination, INDArray columnIndices, double value) {
         int rowsCount = destination.size(0);
         for (int i = 0 ; i < rowsCount ; i++) {
-            destination.getScalar(i, columnIndices.getInt(i, 0)).add(value);
+            destination.get(NDArrayIndex.point(i), NDArrayIndex.point(columnIndices.getInt(i, 0))).addi(value);
         }
     }
 

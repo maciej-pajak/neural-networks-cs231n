@@ -311,4 +311,8 @@ public class LinearClassifier {
     public INDArray getLearningHistory() {
         return learningHistory;
     }
+
+    public INDArray getWeights() {
+        return weights;
+    }
 }

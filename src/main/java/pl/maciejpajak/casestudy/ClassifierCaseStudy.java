@@ -1,9 +1,15 @@
-package pl.maciejpajak.playground;
+package pl.maciejpajak.casestudy;
 
-import org.knowm.xchart.*;
+import org.knowm.xchart.SwingWrapper;
+import org.knowm.xchart.XYChart;
+import org.knowm.xchart.XYChartBuilder;
+import org.knowm.xchart.XYSeries;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import pl.maciejpajak.classifier.LinearClassifier;
 
 /**
  * Minimal classifier case study.
@@ -33,6 +39,7 @@ public class ClassifierCaseStudy {
                     .linspace(i * 4, (i + 1) * 4, pointsPreClass)
                     .addi(Nd4j.randn(1, pointsPreClass).muli(0.2));
             INDArray coord = Nd4j.vstack(radius.mul(Transforms.sin(theta)), radius.mul(Transforms.cos(theta))).transpose();
+            // add series to chart
             chart.addSeries("class " + (i + 1),
                     radius.mul(Transforms.sin(theta)).data().asDouble(),
                     radius.mul(Transforms.cos(theta)).data().asDouble());
@@ -42,6 +49,15 @@ public class ClassifierCaseStudy {
                 dataLabels.putScalar(i * pointsPreClass + j, i);
             }
         }
+
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(dataSet, dataLabels, 1, 0.001,200,300, LinearClassifier.LossFunction.SOFTMAX);
+
+        INDArray predited = lc.predict(dataSet);
+
+        double acc = predited.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
+
+        // show classification accuracy in chart title
+        chart.setTitle(String.format("Data set (acc = %.2f)", acc));
 
         // display chart
         new SwingWrapper(chart).displayChart();

@@ -1,47 +1,21 @@
 package pl.maciejpajak.cifar;
 
-import javafx.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
+import pl.maciejpajak.cifar.util.CifarDataSet;
 import pl.maciejpajak.classifier.LinearClassifier;
 
-import java.io.*;
+import java.io.File;
+import java.util.Arrays;
+import java.util.logging.Logger;
 
 public class CifarClassify {
+
+    private final static Logger LOG = Logger.getLogger(CifarClassify.class.getName());
 
     private static final int IMAGES_IN_FILE = 10000;
     private static final int IMAGE_LEN = 3072;
 
-    private CifarClassify() {
-    }
-
-    public static Pair<INDArray, INDArray> getCifarLabelsAndData(File... files) {
-        INDArray dataSet = Nd4j.create(IMAGES_IN_FILE * files.length, IMAGE_LEN);
-        INDArray lables = Nd4j.create(IMAGES_IN_FILE * files.length, 1);
-        int imgCount = 0;
-        try {
-            FileInputStream fis;
-            byte[] buffer = new byte[3072];
-            for (File f : files) {
-                fis = new FileInputStream(f);
-                for (int j = 0; j < IMAGES_IN_FILE; j++) {
-                    lables.putScalar(imgCount, fis.read());
-
-                    fis.read(buffer);
-
-                    for (int i = 0; i < IMAGE_LEN; i++) {
-                        dataSet.putScalar(imgCount, i, (double) buffer[i]);
-                    }
-                    imgCount++;
-
-                }
-                fis.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return new Pair<>(lables, dataSet);
-    }
+    private CifarClassify() {}
 
     private static final String PATH = "/Users/mac/Downloads/cifar-10-batches-bin";
 
@@ -58,50 +32,109 @@ public class CifarClassify {
 //        learning_rates = [1e-7, 5e-5]
 //        regularization_strengths = [2.5e4, 5e4]
 
-        Pair<INDArray, INDArray> trainData = CifarClassify.getCifarLabelsAndData(dataSetsFiles);
+        CifarDataSet trainSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, dataSetsFiles);
+        CifarDataSet testSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, testDataFile);
 
-        Pair<INDArray, INDArray> testData = CifarClassify.getCifarLabelsAndData(testDataFile);
+        // Preprocessing: subtract the mean image
+        INDArray meanImage = trainSet.getMeanExample();
+        trainSet.preprocessWithMean(meanImage);
+        testSet.preprocessWithMean(meanImage);
 
-        findBestParams(trainData, testData);
+        // Split the data into train, val, and test sets. In addition create
+        // a small development set as a subset of the training data;
+        // this can be used for development so the code runs faster.
+        int numTraining = 49000;
+        int numValidation = 1000;
+        int numTest = 1000;
+        int numDev = 500;
+
+        // Validation set will be numValidation points from the original training set.
+        CifarDataSet validationSet = trainSet.getSubSet(numTraining, numTraining + numValidation);
+
+        // Our training set will be the first num_train points from the original training set.
+        CifarDataSet trainingSet = trainSet.getSubSet(1 , numTraining + 1);
+
+        // Development set - a small subset of the training set.
+        CifarDataSet devSet = trainingSet.getSubSet(1, numDev + 1); // TODO change to random; mask = np.random.choice(num_training, num_dev, replace=False)
+
+        // The first numTest points of the original test set as the testing set.
+        CifarDataSet testingSet = testSet.getSubSet(1, numTest + 1);
+
+        // Check dimensions
+        LOG.info("validation set data : " + Arrays.toString(validationSet.getData().shape()));
+        LOG.info("validation set labels : " + Arrays.toString(validationSet.getLabels().shape()));
+
+        LOG.info("training set data : " + Arrays.toString(trainingSet.getData().shape()));
+        LOG.info("training set labels : " + Arrays.toString(trainingSet.getLabels().shape()));
+
+        LOG.info("dev set data : " + Arrays.toString(devSet.getData().shape()));
+        LOG.info("dev set labels : " + Arrays.toString(devSet.getLabels().shape()));
+
+        LOG.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
+        LOG.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
+
+        findBestParams(trainingSet, validationSet);
+
+
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainSet.getData(), trainSet.getLabels(),
+                0.0000001, 40000, 10000, 256, LinearClassifier.LossFunction.SVM);
+
+//        lc.plotLearningAnalysis();
+
+        INDArray predTrain = lc.predict(trainingSet.getData());
+        INDArray predVal = lc.predict(validationSet.getData());
+
+        double trainAcc = predTrain.eq(trainingSet.getLabels()).sumNumber().doubleValue() / predTrain.length();
+        double valAcc = predVal.eq(validationSet.getLabels()).sumNumber().doubleValue() / predVal.length();
+
+        System.out.println("Training accuracy: " + trainAcc);
+        System.out.println("Validation accuracy: " + valAcc);
+
+
     }
 
-    private static void findBestParams(Pair<INDArray, INDArray> trainData, Pair<INDArray, INDArray> testData) {
-        double[] learningRates = {0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001};
-        double[] regularization = {0.001, 0.01, 0.1, 1, 10, 100, 500, 1000, 2500, 5000, 10000, 100000};
-        int[] batchSize = {1, 4, 16, 32, 64, 128, 256, 512};
+    /**
+     * Function search for best parameters. Chooses the best hyperparameters by tuning on the validation
+     * set. For each combination of hyperparameters, trains a linear SVM on the
+     * training set, computes its accuracy on the training and validation sets.
+     * In addition, store the best validation accuracy and corredpoding parameters.
+     *
+     * @param trainingSet
+     * @param validationSet
+     */
+    private static void findBestParams(CifarDataSet trainingSet, CifarDataSet validationSet) {
+        double[] learningRates = {0.0000001, 0.00001};
+        double[] regularization = {2500, 50000, 25000, 50000};
+        int[] batchSize = {128, 256};
+        int numIterations = 5000;
 
-        try (PrintWriter pw = new PrintWriter(new FileWriter("results.txt", true), true)) {
+        double bestParams[] = new double[3];
+        double bestValidationAccuracy = -1.0;
 
-            pw.println("learning_rate, regularization, batchSize, train_acc, test_acc");
+        for (int i = 0 ; i < learningRates.length ; i++) {
+            for (int j = 0 ; j < regularization.length ; j++) {
+                for (int k = 0 ; k < batchSize.length ; k++) {
 
-            for (int i = 0 ; i < learningRates.length ; i++) {
-                for (int j = 0 ; j < regularization.length ; j++) {
-                    for (int k = 0 ; k < batchSize.length ; k++) {
+                    LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
+                            learningRates[i], regularization[j], numIterations, batchSize[k], LinearClassifier.LossFunction.SVM);
 
-                        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainData.getValue(), trainData.getKey(),
-                                learningRates[i], regularization[j], 5000, batchSize[k], LinearClassifier.LossFunction.SVM);
+                    INDArray predTrain = lc.predict(trainingSet.getData());
+                    INDArray predVal = lc.predict(validationSet.getData());
 
-                        // 0.0000001, 2500, 2000, 64
+                    double trainAcc = predTrain.eq(trainingSet.getLabels()).sumNumber().doubleValue() / predTrain.length();
+                    double valAcc = predVal.eq(validationSet.getLabels()).sumNumber().doubleValue() / predVal.length();
 
-
-                        INDArray predTrain = lc.predict(trainData.getValue());
-                        INDArray predTest = lc.predict(testData.getValue());
-
-                        double trainAcc = predTrain.eq(trainData.getKey()).sumNumber().doubleValue() / predTrain.length();
-                        double testAcc = predTest.eq(testData.getKey()).sumNumber().doubleValue() / predTest.length();
-
-                        pw.println(String.format("%f, %f, %d, %f, %f", learningRates[i], regularization[j], batchSize[k], trainAcc, testAcc));
-
-                        lc.saveLearningAnalysis(String.format("%f-%f-%d", learningRates[i], regularization[j], batchSize[k]));
+                    if (valAcc > bestValidationAccuracy) {
+                        bestValidationAccuracy = valAcc;
+                        bestParams = new double[] {learningRates[i], regularization[j], batchSize[k]};
                     }
+
+                    LOG.info(String.format("rate = %.7f, reg = %f, batch = %d, train_acc = %f, val_acc = %f", learningRates[i], regularization[j], batchSize[k], trainAcc, valAcc));
                 }
             }
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
+        LOG.info(String.format("Best validation accuracy %f for learning_rate = %.7f, reg = %f, batch_size = %.0f", bestValidationAccuracy, bestParams[0], bestParams[1], bestParams[2]));
 
     }
 

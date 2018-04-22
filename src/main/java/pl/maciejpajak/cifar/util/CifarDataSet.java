@@ -18,9 +18,15 @@ public class CifarDataSet {
     // an array of shape N x 1 giving labels for each example from data array
     private final INDArray labels;
 
+    private final int size;
+
     private CifarDataSet(INDArray data, INDArray labels) {
+        if (data.shape()[0] != labels.shape()[0] || !labels.isColumnVector()) {
+            throw new IllegalArgumentException("labels matrix is invalid");
+        }
         this.data = data;
         this.labels = labels;
+        this.size = data.shape()[0];
     }
 
     /**
@@ -75,7 +81,7 @@ public class CifarDataSet {
                     fis.read(buffer);
 
                     for (int i = 0; i < imageLength; i++) {
-                        dataSet.putScalar(imgCount, i, (double) buffer[i]);
+                        dataSet.putScalar(imgCount, i, buffer[i]);
                     }
                     imgCount++;
 
@@ -95,5 +101,9 @@ public class CifarDataSet {
 
     public INDArray getLabels() {
         return labels;
+    }
+
+    public int getSize() {
+        return size;
     }
 }

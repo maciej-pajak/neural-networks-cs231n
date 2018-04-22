@@ -13,7 +13,9 @@ import java.io.IOException;
  */
 public class CifarDataSet {
 
+    // an array of shape N x D giving N examples (each with D dimensionality)
     private final INDArray data;
+    // an array of shape N x 1 giving labels for each example from data array
     private final INDArray labels;
 
     private CifarDataSet(INDArray data, INDArray labels) {
@@ -23,13 +25,31 @@ public class CifarDataSet {
 
     /**
      * Returns subset of this CifarDataSet. The returned object is view of the original set.
+     * Examples are indexed from 1.
+     *
      * @param begin - start element index (inclusive)
      * @param end - end element index (exclusive)
      * @return - subset view of CifarDataSet.
      */
     public CifarDataSet getSubSet(int begin, int end) {
-        return new CifarDataSet(data.get(NDArrayIndex.interval(begin, end), NDArrayIndex.all()),
-                labels.get(NDArrayIndex.interval(begin, end), NDArrayIndex.all()));
+        return new CifarDataSet(data.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()),
+                labels.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()));
+    }
+
+    /**
+     * Returns mean example for this data set.
+     * @return
+     */
+    public INDArray getMeanExample() {
+        return data.mean(0);
+    }
+
+    /**
+     * Subtracts mean from every example in this data set.
+     * @param mean
+     */
+    public void preprocessWithMean(INDArray mean) {
+        data.subiRowVector(mean);
     }
 
     /**

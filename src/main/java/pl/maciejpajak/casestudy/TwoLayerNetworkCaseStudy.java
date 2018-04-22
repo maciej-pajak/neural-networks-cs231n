@@ -1,8 +1,11 @@
 package pl.maciejpajak.casestudy;
 
-import javafx.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import pl.maciejpajak.classifier.Nd4jHelper;
+
+import java.util.logging.Logger;
 
 /**
  * A model of two layer fully-connected neural network.
@@ -17,6 +20,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * Based on cs231n.
  */
 public class TwoLayerNetworkCaseStudy {
+
+    private final static Logger LOG = Logger.getLogger(TwoLayerNetworkCaseStudy.class.getName());
 
     // first layer weights D x H
     private final INDArray weightsOne;
@@ -45,20 +50,6 @@ public class TwoLayerNetworkCaseStudy {
     }
 
     /**
-     * Compute the loss and gradients for a two layer fully connected neural network.
-     * @param dataSet - input data of shape N x D. Each row is a training example.
-     * @param dataLables - array with training labels of shape 1 x N.
-     * @param reg - regularization strength.
-     *
-     * @return
-     */
-    private Pair<Double, INDArray> loss(INDArray dataSet, INDArray dataLables, double reg) {
-
-
-        return null;
-    }
-
-    /**
      * Train this neural network using stochastic gradient descent.
      *
      * @param trainingData - an array of shape N x D giving training data.
@@ -73,7 +64,62 @@ public class TwoLayerNetworkCaseStudy {
      */
     public void train(INDArray trainingData, INDArray trainingLables, INDArray validationData, INDArray validationLables,
                       double learningRate, double learningRateDecay, double reg, double iterations, double batchSize) {
-        throw new UnsupportedOperationException("Not yet implemented.");
+
+        int samples = trainingData.size(0);
+
+        for (int i = 0 ; i < iterations ; i++) {
+            // evaluate class scores N x C
+            INDArray hiddenLayer = Transforms.max(trainingData.mmul(weightsOne).add(biasesOne), 0); // ReLU activation
+            INDArray scores = hiddenLayer.mul(weightsTwo).add(biasesTwo);
+
+            // compute the class probabilities
+            INDArray expScores = Transforms.exp(scores);
+            INDArray probs = expScores.divColumnVector(expScores.sum(1));
+
+            // compute hte loss: average cross-entropy loss and regularization
+            INDArray correctLogProbs = Transforms.log(probs).mul(-1);
+
+            double dataLoss = correctLogProbs.sumNumber().doubleValue() / samples;
+            double regLoss = Transforms.pow(weightsOne, 2).sumNumber().doubleValue() * reg
+                    + Transforms.pow(weightsTwo, 2).sumNumber().doubleValue() * reg;
+            double loss = dataLoss + regLoss;
+
+            if (i % 100 == 0) {
+                LOG.info(String.format("iteration %d, loss %f", i, loss));
+            }
+
+            // compute the gradient on scores
+            INDArray dScores = probs.dup();
+            Nd4jHelper.addScalar(dScores, trainingLables, -1.0); // update correct class probabilities
+            dScores.divi(samples);
+
+            // backpropate the gradient to the parameters
+            // first backprop into parameters W2 and b2
+            INDArray dWeightsTwo = hiddenLayer.transpose().mmul(dScores);
+            INDArray dBiasesTwo = dScores.sum(0);
+
+            // next backprop into hidden layer
+            INDArray dHiddenLayer = dScores.mmul(weightsTwo.transpose());
+
+            // backprop the ReLU non-linearity
+            dHiddenLayer.mul(hiddenLayer.gt(0)); // TODO check dhidden[hidden_layer <= 0] = 0
+
+            // finally into W,b
+            INDArray dWeightsOne = trainingData.transpose().mmul(dHiddenLayer);
+            INDArray dBiasesOne = dHiddenLayer.sum(0);
+
+            // add regularization gradient contribution
+            dWeightsTwo.add(weightsTwo.mul(2.0 * reg));
+            dWeightsOne.add(weightsOne.mul(2.0 * reg));
+
+            // perform a parameter update
+            weightsOne.add(dWeightsOne.mul(-1.0 * learningRate));
+            biasesOne.add(dBiasesOne.mul(-1.0 * learningRate));
+            weightsTwo.add(dWeightsTwo.mul(-1.0 * learningRate));
+            biasesTwo.add(dBiasesTwo.mul(-1.0 * learningRate));
+        }
+
+
     }
 
     /**
@@ -83,7 +129,11 @@ public class TwoLayerNetworkCaseStudy {
      * @return - array of shape N x 1 giving predicted labels for each input element.
      */
     public INDArray predict(INDArray dataSet) {
-        throw new UnsupportedOperationException("Not yet implemented.");
+
+        INDArray hiddenLayer = dataSet.mmul(weightsOne).add(biasesOne);
+        INDArray scores = hiddenLayer.mmul(weightsTwo).add(biasesTwo);
+
+        return scores.argMax(1);
     }
 
 }

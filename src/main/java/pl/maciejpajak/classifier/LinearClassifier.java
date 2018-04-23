@@ -56,7 +56,7 @@ public class LinearClassifier {
         int numClasses = trainingLabels.maxNumber().intValue() + 1; // assume y takes values 0...K-1 where K is number of classes
 
         // initialize weights
-        INDArray weights = Nd4j.randn(sampleDimensions + 1, numClasses).mul(0.001); // + 1 bias trick
+        INDArray weights = Nd4j.randn(sampleDimensions + 1, numClasses).mul(0.0001); // + 1 bias trick
 
         // Run stochastic gradient descent to optimize W
 

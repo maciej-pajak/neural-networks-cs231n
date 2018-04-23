@@ -3,6 +3,7 @@ package pl.maciejpajak.cifar;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import pl.maciejpajak.cifar.util.CifarDataSet;
 import pl.maciejpajak.classifier.LinearClassifier;
+import pl.maciejpajak.classifier.LossFunction;
 
 import java.io.File;
 import java.util.Arrays;
@@ -73,24 +74,26 @@ public class CifarClassify {
         LOG.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
         LOG.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
 
-        findBestParams(trainingSet, validationSet);
+        //findBestParams(trainingSet, validationSet);
 
 
         LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainSet.getData(), trainSet.getLabels(),
-                0.0000001, 40000, 10000, 256, LinearClassifier.LossFunction.SVM);
+                0.0000001, 50000, 1500, 200, LossFunction.SVM);
 
 //        lc.plotLearningAnalysis();
 
         INDArray predTrain = lc.predict(trainingSet.getData());
+        CifarDataSet()
+                lc.getWeights().dup();
+        lc.getLearningHistory().plot();
         INDArray predVal = lc.predict(validationSet.getData());
+        lc.getLearningHistory().plot();
 
-        double trainAcc = predTrain.eq(trainingSet.getLabels()).sumNumber().doubleValue() / predTrain.length();
-        double valAcc = predVal.eq(validationSet.getLabels()).sumNumber().doubleValue() / predVal.length();
+        double trainAcc = predTrain.eq(trainingSet.getLabels()).meanNumber().doubleValue();
+        double valAcc = predVal.eq(validationSet.getLabels()).meanNumber().doubleValue();
 
         System.out.println("Training accuracy: " + trainAcc);
         System.out.println("Validation accuracy: " + valAcc);
-
-
     }
 
     /**
@@ -116,7 +119,7 @@ public class CifarClassify {
                 for (int k = 0 ; k < batchSize.length ; k++) {
 
                     LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
-                            learningRates[i], regularization[j], numIterations, batchSize[k], LinearClassifier.LossFunction.SVM);
+                            learningRates[i], regularization[j], numIterations, batchSize[k], LossFunction.SVM);
 
                     INDArray predTrain = lc.predict(trainingSet.getData());
                     INDArray predVal = lc.predict(validationSet.getData());

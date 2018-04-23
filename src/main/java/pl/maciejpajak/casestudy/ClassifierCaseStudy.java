@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import pl.maciejpajak.classifier.LinearClassifier;
+import pl.maciejpajak.classifier.LossFunction;
 
 /**
  * Minimal classifier case study.
@@ -48,7 +49,7 @@ public class ClassifierCaseStudy {
             }
         }
 
-        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(dataSet, dataLabels, 1, 0.001,200,300, LinearClassifier.LossFunction.SOFTMAX);
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(dataSet, dataLabels, 1, 0.001,200,300, LossFunction.SOFTMAX);
 
         INDArray predited = lc.predict(dataSet);
 

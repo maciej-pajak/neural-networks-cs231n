@@ -13,7 +13,7 @@ public final class Nd4jHelper {
     public static INDArray getSpecifiedElements(INDArray source, INDArray columnIndices) {
         int rowsCount = source.size(0);
         INDArray indices = Nd4j.linspace(0, rowsCount - 1, rowsCount)
-                .muli(source.size(1))
+                .mul(source.size(1))
                 .add(columnIndices.transpose());
         return Nd4j.toFlattened(source).get(new SpecifiedIndex(indices.data().asInt()));
     }

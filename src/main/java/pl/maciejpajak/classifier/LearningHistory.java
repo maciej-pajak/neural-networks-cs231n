@@ -34,15 +34,15 @@ public class LearningHistory {
         return history.dup();
     }
 
-    public void plotLearningHistory() {
+    public void plot() {
         // Create Chart
         XYChart chart = new XYChartBuilder().width(600).height(500)
                 .title("Learning analysis").xAxisTitle("iteration").yAxisTitle("val").build();
 
         double[] xIterations = history.getColumn(0).dup().data().asDouble();
-        double[] yAccuracy = history.getColumn(1).dup().data().asDouble();
+        double[] yLoss = history.getColumn(1).dup().data().asDouble();
         // convert loss to percentage to fit on one chart with accuracy
-        double[] yLoss = history.getColumn(2).div(history.getColumn(2).maxNumber()).dup().data().asDouble();
+        double[] yAccuracy = history.getColumn(2).div(history.getColumn(2).maxNumber()).dup().data().asDouble();
 
 
         // Series

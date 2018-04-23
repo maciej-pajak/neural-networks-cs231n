@@ -4,6 +4,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.awt.*;
+import java.awt.image.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -13,6 +15,9 @@ import java.io.IOException;
  */
 public class CifarDataSet {
 
+    private static final int IMAGE_WIDTH = 32;
+    private static final int IMAGE_HEIGHT = 32;
+
     // an array of shape N x D giving N examples (each with D dimensionality)
     private final INDArray data;
     // an array of shape N x 1 giving labels for each example from data array
@@ -21,7 +26,7 @@ public class CifarDataSet {
     private final int size;
 
     private CifarDataSet(INDArray data, INDArray labels) {
-        if (data.shape()[0] != labels.shape()[0] || !labels.isColumnVector()) {
+        if (labels != null && (data.shape()[0] != labels.shape()[0] || !labels.isColumnVector())) {
             throw new IllegalArgumentException("labels matrix is invalid");
         }
         this.data = data;
@@ -39,7 +44,7 @@ public class CifarDataSet {
      */
     public CifarDataSet getSubSet(int begin, int end) {
         return new CifarDataSet(data.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()),
-                labels.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()));
+                labels == null ? null : labels.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()));
     }
 
     /**
@@ -105,5 +110,32 @@ public class CifarDataSet {
 
     public int getSize() {
         return size;
+    }
+
+    private BufferedImage getImage(int imageIndex) {
+        if (imageIndex >= size) {
+            throw new ArrayIndexOutOfBoundsException("index should be less than data set size: " + size);
+        }
+        DataBuffer buffer;
+        buffer = new DataBufferByte(refactor(data.getRow(imageIndex).data().asBytes()), data.columns());
+
+        //3 bytes per pixel: red, green, blue
+        WritableRaster raster = Raster.createInterleavedRaster(buffer, IMAGE_WIDTH, IMAGE_HEIGHT, 3 * IMAGE_WIDTH, 3, new int[] {0, 1, 2}, null);
+        ColorModel cm = new ComponentColorModel(ColorModel.getRGBdefault().getColorSpace(), false, true, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+        BufferedImage image = new BufferedImage(cm, raster, true, null);
+
+        return image;
+    }
+
+    private static byte[] refactor(byte[] arr) {
+        byte[] res = new byte[arr.length];
+        int pos = 0;
+        for (int i = 0; i < arr.length ; i += 3) {
+            pos = i / 3;
+            res[i] = arr[pos];
+            res[i + 1] = arr[1024 + pos];
+            res[i + 2] = arr[2048 + pos];
+        }
+        return res;
     }
 }

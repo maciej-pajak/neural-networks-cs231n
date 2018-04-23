@@ -32,9 +32,6 @@ public class LossFunctionTest {
         INDArray svmNumericalGradient = LossFunction.numericalGradient(LossFunction.SVM, input, labels, weights, 1000, 0.001);
         INDArray svmNaiveNumericalGradient = LossFunction.numericalGradient(LossFunction.SVM_NAIVE, input, labels, weights, 1000, 0.001);
 
-        System.out.println(svmNumericalGradient.getRow(0));
-        System.out.println(svmResult.getValue().getRow(0));
-
         assertTrue(svmNumericalGradient.equalsWithEps(svmResult.getValue(), 10));
         assertTrue(svmNaiveNumericalGradient.equalsWithEps(svmNaiveResult.getValue(), 10));
     }

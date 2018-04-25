@@ -21,7 +21,7 @@ public class LearningHistory {
     private int currentRecord;
 
     public LearningHistory(int length) {
-        this.history = Nd4j.create(length, 3);
+        this.history = (length > 0) ? Nd4j.create(length, 3) : null;
         currentRecord = 0;
     }
 
@@ -35,21 +35,23 @@ public class LearningHistory {
     }
 
     public void plot() {
-        // Create Chart
-        XYChart chart = new XYChartBuilder().width(600).height(500)
-                .title("Learning analysis").xAxisTitle("iteration").yAxisTitle("val").build();
+        if (history != null) {
+            // Create Chart
+            XYChart chart = new XYChartBuilder().width(600).height(500)
+                    .title("Learning analysis").xAxisTitle("iteration").yAxisTitle("val").build();
 
-        double[] xIterations = history.getColumn(0).dup().data().asDouble();
-        double[] yLoss = history.getColumn(1).dup().data().asDouble();
-        // convert loss to percentage to fit on one chart with accuracy
-        double[] yAccuracy = history.getColumn(2).div(history.getColumn(2).maxNumber()).dup().data().asDouble();
+            double[] xIterations = history.getColumn(0).dup().data().asDouble();
+            // convert loss to percentage to fit on one chart with accuracy
+            double[] yLoss = history.getColumn(1).div(history.getColumn(1).maxNumber()).dup().data().asDouble();
+            double[] yAccuracy = history.getColumn(2).dup().data().asDouble();
 
 
-        // Series
-        chart.addSeries("Accuracy [%]", xIterations, yAccuracy);
-        chart.addSeries("Loss [%  of max loss]", xIterations, yLoss);
+            // Series
+            chart.addSeries("Accuracy [%]", xIterations, yAccuracy);
+            chart.addSeries("Loss [%  of max loss]", xIterations, yLoss);
 
-        new SwingWrapper(chart).displayChart();
+            new SwingWrapper(chart).displayChart();
+        }
     }
 
     public void saveLearningHistoryPlot(String fileName) {

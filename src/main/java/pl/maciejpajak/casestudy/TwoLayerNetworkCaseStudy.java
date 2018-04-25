@@ -3,8 +3,11 @@ package pl.maciejpajak.casestudy;
 import org.knowm.xchart.SwingWrapper;
 import org.knowm.xchart.XYChart;
 import org.knowm.xchart.XYChartBuilder;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.impl.LossHinge;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import pl.maciejpajak.classifier.Nd4jHelper;
 

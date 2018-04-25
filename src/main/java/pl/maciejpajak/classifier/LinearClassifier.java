@@ -1,12 +1,20 @@
 package pl.maciejpajak.classifier;
 
 import javafx.util.Pair;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.activations.impl.ActivationRReLU;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossHinge;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Simple linear classifier implementation.
@@ -14,7 +22,7 @@ import java.util.logging.Logger;
  */
 public class LinearClassifier {
 
-    private final static Logger LOG = Logger.getLogger(LinearClassifier.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(LinearClassifier.class);
 
     private final INDArray weights;
     private final LossFunction lossFunction;
@@ -73,18 +81,69 @@ public class LinearClassifier {
 
             // evaluate loss and gradient
             Pair<Double, INDArray> lossAndGradient = lossFunction.loss(batchSet, batchLabels, weights, reg);
+//            Pair<Double, INDArray> lossNaive = LossFunction.SVM_NAIVE.loss(batchSet, batchLabels, weights, reg);
+//
+//            logger.debug("loss       : {}", lossAndGradient.getKey());
+//            logger.debug("loss naive : {}", lossNaive.getKey());
+//            logger.debug("mean gradient difference : {}", lossAndGradient.getValue().sub(lossNaive.getValue()).meanNumber().doubleValue());
 
             // perform parameter update
             weights.subi(lossAndGradient.getValue().mul(learningRate));
 
             // Update the weights using the gradient and the learning rate.
             if (i % loggingRate == 0) {
-                LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
-                learningHistory.addNextRecord(i, lossAndGradient.getKey(), 0.0);
-//                INDArray bestScore = batchSet.mmul(weights).argMax(1);
-//                double acc = bestScore.eq(batchLabels).sumNumber().doubleValue() / batchSize;
+//                LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
+                INDArray bestLabels = batchSet.mmul(weights).argMax(1);
+                double acc = bestLabels.eq(batchLabels).meanNumber().doubleValue();
+                learningHistory.addNextRecord(i, lossAndGradient.getKey(), acc);
 //                learningHistory.putRow(i / loggingRate - 1, Nd4j.create(new double[]{i, acc, lossAndGradient.getKey()}, new int[]{1,3}));
-//                LOG.log(Level.INFO, String.format("iteration %d / %d: accuracy %f ; loss %f", i, iterations, acc, lossAndGradient.getKey()));
+                logger.info("iteration {} / {} : accuracy {} ; loss {}", i, iterations, acc, lossAndGradient.getKey());
+            }
+        }
+        return new LinearClassifier(weights, lossFunction, learningHistory);
+    }
+
+    public static LinearClassifier trainNewLinearClassifier(INDArray trainingSet, INDArray trainingLabels,
+                                                            INDArray valSet, INDArray valLabels,
+                                                            double learningRate, double reg, int iterations, int batchSize,
+                                                            LossFunction lossFunction) {
+        final int loggingRate = 100;
+        LearningHistory learningHistory = new LearningHistory(iterations / loggingRate); // for learning analysis
+
+        int samples = trainingSet.size(0);
+        int sampleDimensions = trainingSet.size(1);
+        int numClasses = trainingLabels.maxNumber().intValue() + 1; // assume y takes values 0...K-1 where K is number of classes
+
+        // initialize weights
+        INDArray weights = Nd4j.randn(sampleDimensions + 1, numClasses).mul(0.0001); // + 1 bias trick
+
+        // Run stochastic gradient descent to optimize W
+
+        INDArray batchSet;
+        INDArray batchLabels;
+        int[] randomIndexes;
+
+        for (int i = 1 ; i <= iterations ; i++) {
+
+            // sample batchSet and corrresponding labels for current iteration
+            randomIndexes = createRandomArray(samples, batchSize);
+            batchSet = Nd4j.hstack(trainingSet.getRows(randomIndexes), Nd4j.ones(batchSize, 1)); // vstack bias trick
+            batchLabels = trainingLabels.getRows(randomIndexes);
+
+            // evaluate loss and gradient
+            Pair<Double, INDArray> lossAndGradient = lossFunction.loss(batchSet, batchLabels, weights, reg);
+
+            // perform parameter update
+            weights.subi(lossAndGradient.getValue().mul(learningRate));
+
+            // Update the weights using the gradient and the learning rate.
+            if (i % loggingRate == 0) {
+//                LOG.log(Level.INFO, String.format("iteration %d / %d: loss %f", i, iterations, lossAndGradient.getKey()));
+                INDArray bestLabels = Nd4j.hstack(valSet, Nd4j.ones(valSet.size(0), 1)).mmul(weights).argMax(1);
+                double acc = bestLabels.eq(valLabels).meanNumber().doubleValue();
+                learningHistory.addNextRecord(i, lossAndGradient.getKey(), acc);
+//                learningHistory.putRow(i / loggingRate - 1, Nd4j.create(new double[]{i, acc, lossAndGradient.getKey()}, new int[]{1,3}));
+                logger.info("iteration {} / {} : accuracy {} ; loss {}", i, iterations, acc, lossAndGradient.getKey());
             }
         }
         return new LinearClassifier(weights, lossFunction, learningHistory);
@@ -115,6 +174,6 @@ public class LinearClassifier {
     }
 
     public INDArray getWeights() {
-        return weights;
+        return weights.get(NDArrayIndex.interval(0, weights.rows() - 1), NDArrayIndex.all());
     }
 }

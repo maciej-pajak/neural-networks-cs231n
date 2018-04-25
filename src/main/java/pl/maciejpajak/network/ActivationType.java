@@ -1,6 +1,8 @@
 package pl.maciejpajak.network;
 
 import org.apache.commons.lang3.NotImplementedException;
+import pl.maciejpajak.network.activation.ActivationFunction;
+import pl.maciejpajak.network.activation.ReLU;
 
 public enum ActivationType {
 

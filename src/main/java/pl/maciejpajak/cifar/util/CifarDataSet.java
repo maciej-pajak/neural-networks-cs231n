@@ -13,7 +13,7 @@ import java.io.IOException;
 /**
  * Cifar data containing images and labels.
  */
-public class CifarDataSet {
+public class CifarDataSet implements DataSet {
 
     private static final int IMAGE_WIDTH = 32;
     private static final int IMAGE_HEIGHT = 32;
@@ -42,6 +42,7 @@ public class CifarDataSet {
      * @param end - end element index (exclusive)
      * @return - subset view of CifarDataSet.
      */
+    @Override
     public CifarDataSet getSubSet(int begin, int end) {
         return new CifarDataSet(data.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()),
                 labels == null ? null : labels.get(NDArrayIndex.interval(begin - 1, end - 1), NDArrayIndex.all()));
@@ -100,14 +101,17 @@ public class CifarDataSet {
         return new CifarDataSet(dataSet, labels);
     }
 
+    @Override
     public INDArray getData() {
         return data;
     }
 
+    @Override
     public INDArray getLabels() {
         return labels;
     }
 
+    @Override
     public int getSize() {
         return size;
     }

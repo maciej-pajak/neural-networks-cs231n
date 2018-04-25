@@ -1,17 +1,20 @@
 package pl.maciejpajak.cifar;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.maciejpajak.cifar.util.CifarDataSet;
+import pl.maciejpajak.cifar.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
 import pl.maciejpajak.classifier.LossFunction;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.logging.Logger;
+import java.util.Random;
 
 public class CifarClassify {
 
-    private final static Logger LOG = Logger.getLogger(CifarClassify.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(CifarClassify.class);
 
     private static final int IMAGES_IN_FILE = 10000;
     private static final int IMAGE_LEN = 3072;
@@ -30,16 +33,13 @@ public class CifarClassify {
 
         File testDataFile = new File(PATH + "/test_batch.bin");
 
-//        learning_rates = [1e-7, 5e-5]
-//        regularization_strengths = [2.5e4, 5e4]
-
         CifarDataSet trainSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, dataSetsFiles);
         CifarDataSet testSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, testDataFile);
 
         // Preprocessing: subtract the mean image
-        INDArray meanImage = trainSet.getMeanExample();
-        trainSet.preprocessWithMean(meanImage);
-        testSet.preprocessWithMean(meanImage);
+//        INDArray meanImage = trainSet.getMeanExample();
+//        trainSet.preprocessWithMean(meanImage);
+//        testSet.preprocessWithMean(meanImage);
 
         // Split the data into train, val, and test sets. In addition create
         // a small development set as a subset of the training data;
@@ -61,39 +61,77 @@ public class CifarClassify {
         // The first numTest points of the original test set as the testing set.
         CifarDataSet testingSet = testSet.getSubSet(1, numTest + 1);
 
-        // Check dimensions
-        LOG.info("validation set data : " + Arrays.toString(validationSet.getData().shape()));
-        LOG.info("validation set labels : " + Arrays.toString(validationSet.getLabels().shape()));
-
-        LOG.info("training set data : " + Arrays.toString(trainingSet.getData().shape()));
-        LOG.info("training set labels : " + Arrays.toString(trainingSet.getLabels().shape()));
-
-        LOG.info("dev set data : " + Arrays.toString(devSet.getData().shape()));
-        LOG.info("dev set labels : " + Arrays.toString(devSet.getLabels().shape()));
-
-        LOG.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
-        LOG.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
+//        // Display images to validate
+//        ImageDisplayer imageDisplayer = new ImageDisplayer("Check images", 2,2);
+//        imageDisplayer.addImage(String.valueOf(validationSet.getLabel(0)) + " 1", validationSet.getImage(0));
+//        imageDisplayer.addImage(String.valueOf(trainingSet.getLabel(0)) + " 2", trainingSet.getImage(0));
+//        imageDisplayer.addImage(String.valueOf(devSet.getLabel(0)) + " 3", devSet.getImage(0));
+//        imageDisplayer.addImage(String.valueOf(testingSet.getLabel(0)) + " 4", testingSet.getImage(0));
+//        imageDisplayer.show();
+//
+//        // Check dimensions
+//        logger.info("validation set data : " + Arrays.toString(validationSet.getData().shape()));
+//        logger.info("validation set labels : " + Arrays.toString(validationSet.getLabels().shape()));
+//
+//        logger.info("training set data : " + Arrays.toString(trainingSet.getData().shape()));
+//        logger.info("training set labels : " + Arrays.toString(trainingSet.getLabels().shape()));
+//
+//        logger.info("dev set data : " + Arrays.toString(devSet.getData().shape()));
+//        logger.info("dev set labels : " + Arrays.toString(devSet.getLabels().shape()));
+//
+//        logger.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
+//        logger.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
 
         //findBestParams(trainingSet, validationSet);
 
+        //bestParamsCoarseSearch(devSet, validationSet);
 
-        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainSet.getData(), trainSet.getLabels(),
-                0.0000001, 50000, 1500, 200, LossFunction.SVM);
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
+                validationSet.getData(), validationSet.getLabels(),
+                0.000001, 1000, 2000, 200, LossFunction.SVM);
+//                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
+//                0.0000001, 50000, 5000, 16, LossFunction.SVM);
 
-//        lc.plotLearningAnalysis();
+        lc.getLearningHistory().plot();
 
+        // display template images created from weights
+        CifarDataSet templates = new CifarDataSet(lc.getWeights().transpose(),
+               null);
+        templates.rescale(255);
+        ImageDisplayer id = new ImageDisplayer("Template images", 2, 5);
+        for (int i = 0 ; i < templates.getSize() ; i++) {
+            id.addImage(String.valueOf(i), templates.getImage(i));
+        }
+        id.show();
+
+        // predict
         INDArray predTrain = lc.predict(trainingSet.getData());
-        CifarDataSet()
-                lc.getWeights().dup();
-        lc.getLearningHistory().plot();
         INDArray predVal = lc.predict(validationSet.getData());
-        lc.getLearningHistory().plot();
+        INDArray predTest = lc.predict(testingSet.getData());
 
         double trainAcc = predTrain.eq(trainingSet.getLabels()).meanNumber().doubleValue();
         double valAcc = predVal.eq(validationSet.getLabels()).meanNumber().doubleValue();
+        double testAcc = predTest.eq(testingSet.getLabels()).meanNumber().doubleValue();
+        logger.info("Training accuracy: " + trainAcc);
+        logger.info("Validation accuracy: " + valAcc);
+        logger.info("Testing accuracy: " + testAcc);
+    }
 
-        System.out.println("Training accuracy: " + trainAcc);
-        System.out.println("Validation accuracy: " + valAcc);
+    private static void bestParamsCoarseSearch(CifarDataSet dataSet, CifarDataSet valSet) {
+        int loops = 100;
+        Random r = new Random();
+        for (int i = 0 ; i < loops ; i++) {
+            double lr = Math.pow(10, r.nextDouble() * (-3) - 3);
+            double reg = Math.pow(10, r.nextDouble() * 10 - 5);
+
+            LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(dataSet.getData(), dataSet.getLabels(),
+                    lr, reg, 100, 128, LossFunction.SVM);
+
+            INDArray predVal = lc.predict(valSet.getData());
+            double valAcc = predVal.eq(valSet.getLabels()).meanNumber().doubleValue();
+
+            logger.info("val_acc: {}, lr: {}, reg: {},  ({}/{})", valAcc, lr, reg, (i + 1), loops);
+        }
     }
 
     /**
@@ -132,12 +170,12 @@ public class CifarClassify {
                         bestParams = new double[] {learningRates[i], regularization[j], batchSize[k]};
                     }
 
-                    LOG.info(String.format("rate = %.7f, reg = %f, batch = %d, train_acc = %f, val_acc = %f", learningRates[i], regularization[j], batchSize[k], trainAcc, valAcc));
+                    logger.info(String.format("rate = %.7f, reg = %f, batch = %d, train_acc = %f, val_acc = %f", learningRates[i], regularization[j], batchSize[k], trainAcc, valAcc));
                 }
             }
         }
 
-        LOG.info(String.format("Best validation accuracy %f for learning_rate = %.7f, reg = %f, batch_size = %.0f", bestValidationAccuracy, bestParams[0], bestParams[1], bestParams[2]));
+        logger.info(String.format("Best validation accuracy %f for learning_rate = %.7f, reg = %f, batch_size = %.0f", bestValidationAccuracy, bestParams[0], bestParams[1], bestParams[2]));
 
     }
 

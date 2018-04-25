@@ -25,11 +25,11 @@ public class LinerClassifierPlaygroundTest {
                 0.5, 1.0, 1.5, 2.0}, new int[]{5, 4});
         LossFunction.SVM.loss(x.transpose(),y,W.transpose(), 0);
 //        assertEquals(16.86, LinerClassifierPlayground.L(W, y, x.transpose()), 0.01);
-        Pair<Double, INDArray> resNaive = LossFunction.SVM_NAIVE.loss(x.transpose(),y,W.transpose(),0);
+        Pair<Double, INDArray> resNaive = LossFunction.SVM_NAIVE.loss(x.transpose(),y,W.transpose(),10);
 
-        Pair<Double, INDArray> resVec = LossFunction.SVM.loss(x.transpose(),y,W.transpose(),0);
-        assertEquals(16.86 / 5, resNaive.getKey(), 0.01);
-        assertEquals(16.86 / 5, resVec.getKey(), 0.01);
+        Pair<Double, INDArray> resVec = LossFunction.SVM.loss(x.transpose(),y,W.transpose(),10);
+        assertEquals(16.86 / 5 + 280, resNaive.getKey(), 0.01);
+        assertEquals(16.86 / 5 + 280, resVec.getKey(), 0.01);
         assertEquals(resNaive.getValue(), resVec.getValue());
         INDArray gradNumSvm = LossFunction
                 .numericalGradient(LossFunction.SVM, x.transpose(),y,W.transpose(),0, 0.0001);

@@ -25,7 +25,7 @@ public class CifarDataSet {
 
     private final int size;
 
-    private CifarDataSet(INDArray data, INDArray labels) {
+    public CifarDataSet(INDArray data, INDArray labels) {
         if (labels != null && (data.shape()[0] != labels.shape()[0] || !labels.isColumnVector())) {
             throw new IllegalArgumentException("labels matrix is invalid");
         }
@@ -112,12 +112,25 @@ public class CifarDataSet {
         return size;
     }
 
-    private BufferedImage getImage(int imageIndex) {
+    public void rescale(int scale) {
+        double min = data.minNumber().doubleValue();
+        double max = data.maxNumber().doubleValue();
+        data.subi(min).divi(max - min).muli(scale);
+    }
+
+    public int getLabel(int labelIndex) {
+        if (labelIndex >= size) {
+            throw new ArrayIndexOutOfBoundsException("index should be less than data set size: " + size);
+        }
+        return labels.getInt(labelIndex);
+    }
+
+    public BufferedImage getImage(int imageIndex) {
         if (imageIndex >= size) {
             throw new ArrayIndexOutOfBoundsException("index should be less than data set size: " + size);
         }
         DataBuffer buffer;
-        buffer = new DataBufferByte(refactor(data.getRow(imageIndex).data().asBytes()), data.columns());
+        buffer = new DataBufferByte(refactor(data.getRow(imageIndex).dup().data().asInt()), data.columns());
 
         //3 bytes per pixel: red, green, blue
         WritableRaster raster = Raster.createInterleavedRaster(buffer, IMAGE_WIDTH, IMAGE_HEIGHT, 3 * IMAGE_WIDTH, 3, new int[] {0, 1, 2}, null);
@@ -127,14 +140,14 @@ public class CifarDataSet {
         return image;
     }
 
-    private static byte[] refactor(byte[] arr) {
-        byte[] res = new byte[arr.length];
+    private static byte[] refactor(int[] arr) {
+        byte[] res = new byte[3072];
         int pos = 0;
-        for (int i = 0; i < arr.length ; i += 3) {
+        for (int i = 0; i < res.length ; i += 3) {
             pos = i / 3;
-            res[i] = arr[pos];
-            res[i + 1] = arr[1024 + pos];
-            res[i + 2] = arr[2048 + pos];
+            res[i] = (byte) arr[pos];
+            res[i + 1] = (byte) arr[1024 + pos];
+            res[i + 2] = (byte) arr[2048 + pos];
         }
         return res;
     }

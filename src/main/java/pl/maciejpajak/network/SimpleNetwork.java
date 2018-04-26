@@ -4,9 +4,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.maciejpajak.util.DataSet;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
+import pl.maciejpajak.network.loss.ILossFunction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,11 +21,24 @@ public class SimpleNetwork {
 
     private int loggingRate = 100;
     private boolean trained = false;
-    private List<Layer> layers;
-    private SimpleNetwork(List<Layer> layers) {
+    private final List<Layer> layers;
+    private final ILossFunction lossFunction;
 
+    private SimpleNetwork(List<Layer> layers, ILossFunction lossFunction) {
+        this.layers = layers;
+        this.lossFunction = lossFunction;
     }
 
+    /**
+     * Performs training of this neural network with provided training data and parameters.
+     * @param trainingSet   data set of training examples.
+     * @param validationSet data set of validation examples.
+     * @param learningRate  learning rate.
+     * @param reg           regularization strength.
+     * @param iterations    number of iterations.
+     * @param batchSize     batch size for SGD.
+     * @return              learning history for this network.
+     */
     public LearningHistory train(DataSet trainingSet, DataSet validationSet,
                                  double learningRate, double reg, int iterations, int batchSize) {
         LearningHistory history = new LearningHistory(iterations / loggingRate + 1);
@@ -47,7 +60,7 @@ public class SimpleNetwork {
                 layerResult = layers.get(l).forwardPass(layerResult);
             }
             // TODO
-            // loss = lossFunction(layerResult, labels);
+            double loss = lossFunction(layerResult, trainingSet.getLabels());
 
             // gradient
             INDArray layerGradient = null; // = 1????
@@ -56,12 +69,29 @@ public class SimpleNetwork {
             }
 
             if (i % loggingRate == 0) {
-                // TODO check validation accuracy and data to history;
+                // TODO check validation accuracy and add data to history;
             }
         }
 
         this.trained = true;
         return history;
+    }
+
+    /**
+     * Predicts labels for input data set. Can be only invoked after the network is trained.
+     * @param dataSet   data set to predict classes.
+     * @return          column vector with predicted labels.
+     */
+    public INDArray predict(DataSet dataSet) {
+        if (!trained) {
+            throw new IllegalStateException("Network is not trained yet.");
+        }
+
+        INDArray layerResult = dataSet.getData();
+        for (int l = 0 ; l < layers.size() ; l++) {
+            layerResult = layers.get(l).forwardPass(layerResult);
+        }
+        return layerResult;
     }
 
     // Getters & Setters ===========================================================================
@@ -70,6 +100,10 @@ public class SimpleNetwork {
     }
 
     // Layer =======================================================================================
+
+    /**
+     * Class representing single layer in network.
+     */
     private static class Layer {
         private final INDArray weights;
         private final ActivationFunction activationFunction;
@@ -95,9 +129,13 @@ public class SimpleNetwork {
         return new Builder();
     }
 
+    /**
+     * Convenient builder to create new simple network.
+     */
     public static class Builder {
 
         private List<Layer> layers;
+        private ILossFunction lossFunction;
 
         private Builder() {
             this.layers = new ArrayList<>();
@@ -108,14 +146,28 @@ public class SimpleNetwork {
             return this;
         }
 
+        public Builder loss(ILossFunction lossFunction) {
+            this.lossFunction = lossFunction;
+            return this;
+        }
+
         public SimpleNetwork build() {
-            if (layers.isEmpty()) throw new IllegalStateException("At least one defined layer is required.");
-            return new SimpleNetwork(layers);
+            if (layers.isEmpty())
+                throw new IllegalStateException("At least one defined layer is required.");
+            if (lossFunction == null)
+                throw new IllegalStateException("Loss function cannot be null.");
+            return new SimpleNetwork(layers, lossFunction);
         }
 
     }
 
     // Util ========================================================================================
+    /**
+     * Creates random int array without repetitions from 0 (inclusive) to upperBound (exclusive).
+     * @param upperBound    upper bound of random integers.
+     * @param arraySize     array size.
+     * @return              random array without repetitions.
+     */
     private static int[] createRandomArray(int upperBound, int arraySize) {
         return ThreadLocalRandom.current().ints(0, upperBound).distinct().limit(arraySize).toArray();
     }

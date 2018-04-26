@@ -3,6 +3,9 @@ package pl.maciejpajak.cifar;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.maciejpajak.classifier.LearningHistory;
+import pl.maciejpajak.network.SimpleNetwork;
+import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
 import pl.maciejpajak.classifier.LossFunction;
@@ -84,23 +87,33 @@ public class CifarClassify {
 
         //bestParamsCoarseSearch(devSet, validationSet);
 
-        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
-                validationSet.getData(), validationSet.getLabels(),
-                0.000001, 1000, 2000, 200, LossFunction.SVM);
-//                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
-//                0.0000001, 50000, 5000, 16, LossFunction.SVM);
+        SimpleNetwork lc = SimpleNetwork.builder()
+                                    .layer(3072, 10, null)
+                                    .loss(new MulticlassSVMLoss()).build();
 
-        lc.getLearningHistory().plot();
+        LearningHistory history = lc.train(trainingSet, validationSet, 0.000001, 1000, 256);
 
-        // display template images created from weights
-        CifarDataSet templates = new CifarDataSet(lc.getWeights().transpose(),
-               null);
-        templates.rescale(255);
-        ImageDisplayer id = new ImageDisplayer("Template images", 2, 5);
-        for (int i = 0 ; i < templates.getSize() ; i++) {
-            id.addImage(String.valueOf(i), templates.getImage(i));
-        }
-        id.show();
+        history.plot();
+
+
+
+//        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
+//                validationSet.getData(), validationSet.getLabels(),
+//                0.000001, 1000, 2000, 200, LossFunction.SVM);
+////                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
+////                0.0000001, 50000, 5000, 16, LossFunction.SVM);
+//
+//        lc.getLearningHistory().plot();
+//
+//        // display template images created from weights
+//        CifarDataSet templates = new CifarDataSet(lc.getWeights().transpose(),
+//               null);
+//        templates.rescale(255);
+//        ImageDisplayer id = new ImageDisplayer("Template images", 2, 5);
+//        for (int i = 0 ; i < templates.getSize() ; i++) {
+//            id.addImage(String.valueOf(i), templates.getImage(i));
+//        }
+//        id.show();
 
         // predict
         INDArray predTrain = lc.predict(trainingSet.getData());

@@ -3,8 +3,8 @@ package pl.maciejpajak.classifier;
 import javafx.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import pl.maciejpajak.util.Nd4jHelper;
 
 public enum LossFunction {
     SVM {

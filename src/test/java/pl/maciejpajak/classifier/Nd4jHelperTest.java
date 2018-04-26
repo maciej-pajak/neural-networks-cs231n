@@ -3,6 +3,7 @@ package pl.maciejpajak.classifier;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import pl.maciejpajak.util.Nd4jHelper;
 
 import static org.junit.Assert.*;
 

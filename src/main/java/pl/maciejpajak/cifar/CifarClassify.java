@@ -3,13 +3,11 @@ package pl.maciejpajak.cifar;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.maciejpajak.cifar.util.CifarDataSet;
-import pl.maciejpajak.cifar.util.ImageDisplayer;
+import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
 import pl.maciejpajak.classifier.LossFunction;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Random;
 
 public class CifarClassify {

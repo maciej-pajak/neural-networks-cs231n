@@ -2,10 +2,9 @@ package pl.maciejpajak.network;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.impl.LossHinge;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.maciejpajak.cifar.util.DataSet;
+import pl.maciejpajak.util.DataSet;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
 

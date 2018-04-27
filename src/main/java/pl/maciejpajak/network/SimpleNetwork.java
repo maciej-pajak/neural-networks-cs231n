@@ -2,6 +2,7 @@ package pl.maciejpajak.network;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,25 +71,32 @@ public class SimpleNetwork {
             INDArray layerResult = batchSet;
             for (int l = 0 ; l < layers.size() ; l++) {
                 logger.debug("forward pass layer : {}", l);
+                logger.debug("input shape      : {}", Arrays.toString(layerResult.shape()));
                 layerResult = Nd4j.hstack(layerResult, Nd4j.ones(layerResult.size(0), 1));
+                logger.debug("input shape (+1) : {}", Arrays.toString(layerResult.shape()));
                 layerResult = layers.get(l).forwardPass(layerResult, true);
+                logger.debug("output shape     : {}", Arrays.toString(layerResult.shape()));
             }
             logger.debug("batchLabels shape : {}", Arrays.toString(batchLabels.shape()));
             logger.debug("layerResult shape : {}", Arrays.toString(layerResult.shape()));
             double loss = lossFunction.calculateScore(layerResult, batchLabels, true);
-
+            for (Layer l : layers) {
+                loss += l.getRegularizationLoss();
+            }
             // gradient ==========
             INDArray layerGradient = lossFunction.calculateGradient(batchLabels);
-            logger.debug("loss gradient shape {} : ", Arrays.toString(layerGradient.shape()));
+            logger.debug("loss gradient shape : {}", Arrays.toString(layerGradient.shape()));
             for (int l = layers.size() - 1 ; l >= 0 ; l--) {
+                logger.debug("backproping layer : {}", l);
                 layerGradient = layers.get(l).backprop(layerGradient);
+                layerGradient = layerGradient.get(NDArrayIndex.all(), NDArrayIndex.interval(0, layerGradient.columns() - 1));
             }
 
             if (i % loggingRate == 0) {
                 // TODO add data to history
                 double valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
                 history.addNextRecord(i, loss, valAcc);
-                logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i / iterations);
+                logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i, iterations);
             }
         }
 
@@ -140,7 +148,10 @@ public class SimpleNetwork {
         }
 
         public INDArray forwardPass(INDArray input, boolean training) {
+            logger.debug("forward pass input shape   : {}", Arrays.toString(input.shape()));
+            logger.debug("forward pass weights shape : {}", Arrays.toString(weights.shape()));
             INDArray scores = input.mmul(weights);
+            logger.debug("forward pass scores shape  : {}", Arrays.toString(scores.shape()));
             if (training) {
                 this.inputTmp = input;
                 this.scoresTmp = scores;
@@ -149,7 +160,6 @@ public class SimpleNetwork {
         }
 
         public INDArray backprop(INDArray previousGradient) {
-            logger.debug("backproping layer");
             logger.debug("previous gradient shape : {}", Arrays.toString(previousGradient.shape()));
             // backprop activation function
             INDArray dActivation = activationFunction.backprop(scoresTmp, previousGradient);
@@ -165,6 +175,10 @@ public class SimpleNetwork {
             weights.subi(dWeights.muli(learningRate));
             // return gradient on input
             return dInput;
+        }
+
+        public double getRegularizationLoss() {
+            return Transforms.pow(weights, 2).mul(regularization).sumNumber().doubleValue();
         }
     }
 

@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
+import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
@@ -23,7 +24,7 @@ public class CifarClassify {
 
     private CifarClassify() {}
 
-    private static final String PATH = "/Users/mac/Downloads/cifar-10-batches-bin";
+    private static final String PATH = "C:\\Users\\mpajak\\Downloads\\cifar-10-batches-bin";
 
     public static void main(String[] args) {
         File[] dataSetsFiles = {new File(PATH + "/data_batch_1.bin"),
@@ -89,13 +90,14 @@ public class CifarClassify {
         //bestParamsCoarseSearch(devSet, validationSet);
 
         SimpleNetwork lc = SimpleNetwork.builder()
-                                    .layer(3072, 10, new Identity())
+                                    .layer(3072, 100, new ReLU())
+                                    .layer(100, 10, new Identity())
                                     .loss(new MulticlassSVMLoss()).build();
 
         LearningHistory history = lc.train(trainingSet, validationSet,
-                0.000001, 10000,2000, 256);
+                0.000001, 0.000001,2000, 256);
 
-        history.plot();
+//        history.plot();
 
 
 

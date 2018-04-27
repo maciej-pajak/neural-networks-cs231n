@@ -87,6 +87,7 @@ public class SimpleNetwork {
             if (i % loggingRate == 0) {
                 // TODO add data to history
                 double valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
+                history.addNextRecord(i, loss, valAcc);
                 logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i / iterations);
             }
         }
@@ -110,9 +111,10 @@ public class SimpleNetwork {
     private INDArray predictLabels(INDArray data) {
         INDArray layerResult = data;
         for (int l = 0 ; l < layers.size() ; l++) {
+            layerResult = Nd4j.hstack(layerResult, Nd4j.ones(layerResult.size(0), 1));
             layerResult = layers.get(l).forwardPass(layerResult, false);
         }
-        return layerResult;
+        return layerResult.argMax(1);
     }
 
     // Getters & Setters ===========================================================================

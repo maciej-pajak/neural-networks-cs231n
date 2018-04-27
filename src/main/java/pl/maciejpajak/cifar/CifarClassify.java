@@ -93,7 +93,7 @@ public class CifarClassify {
                                     .loss(new MulticlassSVMLoss()).build();
 
         LearningHistory history = lc.train(trainingSet, validationSet,
-                0.000001, 10000,1000, 256);
+                0.000001, 10000,2000, 256);
 
         history.plot();
 

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.SimpleNetwork;
+import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
@@ -88,10 +89,11 @@ public class CifarClassify {
         //bestParamsCoarseSearch(devSet, validationSet);
 
         SimpleNetwork lc = SimpleNetwork.builder()
-                                    .layer(3072, 10, null)
+                                    .layer(3072, 10, new Identity())
                                     .loss(new MulticlassSVMLoss()).build();
 
-        LearningHistory history = lc.train(trainingSet, validationSet, 0.000001, 1000, 256);
+        LearningHistory history = lc.train(trainingSet, validationSet,
+                0.000001, 10000,1000, 256);
 
         history.plot();
 

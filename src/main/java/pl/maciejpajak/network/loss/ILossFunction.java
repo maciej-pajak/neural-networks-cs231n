@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface ILossFunction {
 
     double calculateScore(INDArray data, INDArray labels, boolean average);
+    INDArray calculateGradient(INDArray lables);
 //    INDArray calculateScore(INDArray data, INDArray labels);
 
 }

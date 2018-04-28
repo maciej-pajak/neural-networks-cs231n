@@ -42,8 +42,6 @@ public class SoftmaxLossTest {
                 0.21383822, 0.236327782, 0.738817408, 0.288651405
         }, new int[]{5, 4});
         softmax.calculateScore(scores, lables, false); // forward pass is required for loss function to cache values
-        System.out.println(gradientExpected);
-        System.out.println(softmax.calculateGradient(lables));
         assertTrue(gradientExpected.equalsWithEps(softmax.calculateGradient(lables), 0.0001));
     }
 

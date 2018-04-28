@@ -1,6 +1,7 @@
 package pl.maciejpajak.network.loss;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import pl.maciejpajak.util.Nd4jHelper;
 
@@ -30,7 +31,7 @@ public class SoftmaxLoss implements ILossFunction {
     @Override
     public INDArray calculateGradient(INDArray lables) {
         INDArray dScores = probsTmp;
-        Nd4jHelper.addScalar(dScores, lables, -1.0); // update correct class probabilities // FIXME
+        Nd4jHelper.putValues(dScores, lables, Nd4jHelper.getSpecifiedElements(dScores, lables).neg().add(1.0));
         return dScores;
     }
 

@@ -112,7 +112,7 @@ public enum LossFunction {
             INDArray dScores = probs; // or dup?
 
             // update correct class probabilities
-            Nd4jHelper.addScalar(dScores, batchLabels, -1.0);
+            Nd4jHelper.putValues(dScores, batchLabels, Nd4jHelper.getSpecifiedElements(dScores, batchLabels).neg().add(1.0));
 
             // average
             dScores.divi(samples);

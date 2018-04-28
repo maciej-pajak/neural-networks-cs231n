@@ -29,9 +29,9 @@ public class SoftmaxLoss implements ILossFunction {
     }
 
     @Override
-    public INDArray calculateGradient(INDArray lables) {
+    public INDArray calculateGradient(INDArray labels) {
         INDArray dScores = probsTmp;
-        Nd4jHelper.putValues(dScores, lables, Nd4jHelper.getSpecifiedElements(dScores, lables).neg().add(1.0));
+        Nd4jHelper.putValues(dScores, labels, Nd4jHelper.getSpecifiedElements(dScores, labels).neg().add(1.0));
         return dScores;
     }
 

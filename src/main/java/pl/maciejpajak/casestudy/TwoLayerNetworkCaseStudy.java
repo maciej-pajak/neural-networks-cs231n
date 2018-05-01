@@ -6,9 +6,16 @@ import org.knowm.xchart.XYChartBuilder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.maciejpajak.classifier.LearningHistory;
+import pl.maciejpajak.network.SimpleNetwork;
+import pl.maciejpajak.network.activation.Identity;
+import pl.maciejpajak.network.activation.ReLU;
+import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.util.Nd4jHelper;
+import pl.maciejpajak.util.SimpleDataSet;
 
-import java.util.logging.Logger;
 
 /**
  * A model of two layer fully-connected neural network.
@@ -24,7 +31,7 @@ import java.util.logging.Logger;
  */
 public class TwoLayerNetworkCaseStudy {
 
-    private final static Logger LOG = Logger.getLogger(TwoLayerNetworkCaseStudy.class.getName());
+    private final static Logger LOG = LoggerFactory.getLogger(TwoLayerNetworkCaseStudy.class.getName());
 
     // first layer weights D x H
     private final INDArray weightsOne;
@@ -186,9 +193,21 @@ public class TwoLayerNetworkCaseStudy {
         INDArray predicted = network.predict(dataSet);
         double acc = predicted.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
 
-        LOG.info(String.format("final accuracy = %.2f", acc));
+        LOG.info("final accuracy = {}", acc);
 
         network.printLearningAnalysis();
+
+        SimpleNetwork simpleNetwork = SimpleNetwork.builder()
+                .layer(dataSet.size(1), 100, new ReLU())
+                .layer(100, 3, new Identity())
+                .loss(new MulticlassSVMLoss())
+                .learningRate(0.5)
+                .regularization(0.001)
+                .iterations(10000)
+                .batchSize(100)
+                .build();
+        LearningHistory lh = simpleNetwork.train(new SimpleDataSet(dataSet, dataLabels), null);
+        LOG.info("simple network accuracy: {}", simpleNetwork.predict(dataSet).eq(dataLabels).meanNumber().doubleValue());
     }
 
 }

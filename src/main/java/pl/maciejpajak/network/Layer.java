@@ -19,6 +19,7 @@ public class Layer {
     private final INDArray weights;
     private final ActivationFunction activationFunction;
     private final NetworkConfig config;
+
     private INDArray inputTmp;
     private INDArray scoresTmp;
 

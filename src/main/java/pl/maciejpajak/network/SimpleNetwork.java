@@ -30,13 +30,14 @@ public class SimpleNetwork {
     private final ILossFunction lossFunction;
 
     // maybe this should be solved differently?
-    private double regularization;
-    private double learningRate;
+    private final NetworkConfig config;
 
-    private SimpleNetwork(List<LayerParams> layers, ILossFunction lossFunction) {
+    private SimpleNetwork(List<LayerParams> layers, ILossFunction lossFunction, NetworkConfig config) {
         this.layers = new ArrayList<>(layers.size());
+        this.config = config;
         for (int i = 0 ; i < layers.size() ; i++) {
-            this.layers.add(new Layer(layers.get(i)));
+            LayerParams params = layers.get(i);
+            this.layers.add(new Layer(params.inputSize, params.outputSize, params.function, config));
         }
         this.lossFunction = lossFunction;
     }
@@ -45,17 +46,15 @@ public class SimpleNetwork {
      * Performs training of this neural network with provided training data and parameters.
      * @param trainingSet   data set of training examples.
      * @param validationSet data set of validation examples.
-     * @param learningRate  learning rate.
-     * @param reg           regularization strength.
-     * @param iterations    number of iterations.
-     * @param batchSize     batch size for SGD.
+//     * @param learningRate  learning rate.
+//     * @param reg           regularization strength.
+//     * @param iterations    number of iterations.
+//     * @param batchSize     batch size for SGD.
      * @return              learning history for this network.
      */
-    public LearningHistory train(DataSet trainingSet, DataSet validationSet,
-                                 double learningRate, double reg, int iterations, int batchSize) {
-        this.regularization = reg;
-        this.learningRate = learningRate;
-        LearningHistory history = new LearningHistory(iterations / loggingRate + 1);
+    public LearningHistory train(DataSet trainingSet, DataSet validationSet) {
+
+        LearningHistory history = new LearningHistory(config.getIterations() / loggingRate + 1);
         int samples = trainingSet.getSize();
 
         // Run SGD to optimize the parameters
@@ -63,8 +62,8 @@ public class SimpleNetwork {
         INDArray batchLabels;
         int[] randomIndexes;
 
-        for (int i = 1 ; i <= iterations ; i++) {
-            randomIndexes = createRandomArray(samples, batchSize);
+        for (int i = 1 ; i <= config.getIterations() ; i++) {
+            randomIndexes = createRandomArray(samples, config.getBatchSize());
             batchSet = trainingSet.getData().getRows(randomIndexes); // vstack bias trick
             batchLabels = trainingSet.getLabels().getRows(randomIndexes);
 
@@ -93,10 +92,14 @@ public class SimpleNetwork {
             }
 
             if (i % loggingRate == 0) {
-                // TODO add data to history
-                double valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
+                double valAcc;
+                if (validationSet != null) {
+                    valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
+                } else {
+                    valAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
+                }
                 history.addNextRecord(i, loss, valAcc);
-                logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i, iterations);
+                logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i, config.getIterations());
             }
         }
 
@@ -130,58 +133,6 @@ public class SimpleNetwork {
         this.loggingRate = loggingRate;
     }
 
-    // Layer =======================================================================================
-
-    /**
-     * Class representing single layer in a network.
-     */
-    private class Layer {
-
-        private final INDArray weights;
-        private final ActivationFunction activationFunction;
-        private INDArray inputTmp;
-        private INDArray scoresTmp;
-
-        private Layer(LayerParams params) {
-            this.weights = Nd4j.randn(params.inputSize, params.outputSize);
-            this.activationFunction = params.function;
-        }
-
-        public INDArray forwardPass(INDArray input, boolean training) {
-            logger.debug("forward pass input shape   : {}", Arrays.toString(input.shape()));
-            logger.debug("forward pass weights shape : {}", Arrays.toString(weights.shape()));
-            INDArray scores = input.mmul(weights);
-            logger.debug("forward pass scores shape  : {}", Arrays.toString(scores.shape()));
-            if (training) {
-                this.inputTmp = input;
-                this.scoresTmp = scores;
-            }
-            return activationFunction.process(scores);
-        }
-
-        public INDArray backprop(INDArray previousGradient) {
-            logger.debug("previous gradient shape : {}", Arrays.toString(previousGradient.shape()));
-            // backprop activation function
-            INDArray dActivation = activationFunction.backprop(scoresTmp, previousGradient);
-            logger.debug("dActivation shape       : {}", Arrays.toString(dActivation.shape()));
-            logger.debug("inputTmp shape          : {}", Arrays.toString(inputTmp.shape()));
-            logger.debug("weights shape           : {}", Arrays.toString(weights.shape()));
-            // backprop dot
-            INDArray dWeights = inputTmp.transpose().mmul(dActivation);
-            INDArray dInput = dActivation.mmul(weights.transpose());
-            // add regularization contribution
-            dWeights.addi(weights.mul(2.0 * regularization));
-            // update weights
-            weights.subi(dWeights.muli(learningRate));
-            // return gradient on input
-            return dInput;
-        }
-
-        public double getRegularizationLoss() {
-            return Transforms.pow(weights, 2).mul(regularization).sumNumber().doubleValue();
-        }
-    }
-
     // Builder =====================================================================================
     public static Builder builder() {
         return new Builder();
@@ -194,6 +145,10 @@ public class SimpleNetwork {
 
         private List<LayerParams> layers;
         private ILossFunction lossFunction;
+        private double learningRate;
+        private double regularization;
+        private int iterations;
+        private int batchSize;
 
         private Builder() {
             this.layers = new ArrayList<>();
@@ -209,12 +164,32 @@ public class SimpleNetwork {
             return this;
         }
 
+        public Builder learningRate(double learningRate) {
+            this.learningRate = learningRate;
+            return this;
+        }
+
+        public Builder regularization(double regularization) {
+            this.regularization = regularization;
+            return this;
+        }
+
+        public Builder iterations(int iterations) {
+            this.iterations = iterations;
+            return this;
+        }
+
+        public Builder batchSize(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
         public SimpleNetwork build() {
             if (layers.isEmpty())
                 throw new IllegalStateException("At least one defined layer is required.");
             if (lossFunction == null)
                 throw new IllegalStateException("Loss function cannot be null.");
-            return new SimpleNetwork(layers, lossFunction);
+            return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, iterations, batchSize));
         }
 
     }

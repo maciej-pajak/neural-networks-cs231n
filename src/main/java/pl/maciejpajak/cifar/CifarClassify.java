@@ -24,7 +24,7 @@ public class CifarClassify {
 
     private CifarClassify() {}
 
-    private static final String PATH = "C:\\Users\\mpajak\\Downloads\\cifar-10-batches-bin";
+    private static final String PATH = "/Users/mac/Downloads/cifar-10-batches-bin";
 
     public static void main(String[] args) {
         File[] dataSetsFiles = {new File(PATH + "/data_batch_1.bin"),
@@ -40,9 +40,9 @@ public class CifarClassify {
         CifarDataSet testSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, testDataFile);
 
         // Preprocessing: subtract the mean image
-//        INDArray meanImage = trainSet.getMeanExample();
-//        trainSet.preprocessWithMean(meanImage);
-//        testSet.preprocessWithMean(meanImage);
+        INDArray meanImage = trainSet.getMeanExample();
+        trainSet.preprocessWithMean(meanImage);
+        testSet.preprocessWithMean(meanImage);
 
         // Split the data into train, val, and test sets. In addition create
         // a small development set as a subset of the training data;
@@ -90,25 +90,26 @@ public class CifarClassify {
         //bestParamsCoarseSearch(devSet, validationSet);
 
         SimpleNetwork lc = SimpleNetwork.builder()
-                                    .layer(3072, 100, new ReLU())
-                                    .layer(100, 10, new Identity())
-                                    .loss(new MulticlassSVMLoss()).build();
+                .layer(3072, 100, new ReLU())
+                .layer(100, 10, new Identity())
+                .loss(new MulticlassSVMLoss())
+                .learningRate(1e-7)
+                .regularization(1e-1)
+                .iterations(2000)
+                .batchSize(256).build();
 
-        LearningHistory history = lc.train(trainingSet, validationSet,
-                0.000001, 0.000001,2000, 256);
+        LearningHistory history = lc.train(trainingSet, validationSet);
 
 //        history.plot();
 
-
-
 //        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
 //                validationSet.getData(), validationSet.getLabels(),
-//                0.000001, 1000, 2000, 200, LossFunction.SVM);
-////                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
-////                0.0000001, 50000, 5000, 16, LossFunction.SVM);
-//
+//                0.00000001, 50000, 2000, 256, LossFunction.SVM);
+//////                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
+//////                0.0000001, 50000, 5000, 16, LossFunction.SVM);
+////
 //        lc.getLearningHistory().plot();
-//
+
 //        // display template images created from weights
 //        CifarDataSet templates = new CifarDataSet(lc.getWeights().transpose(),
 //               null);

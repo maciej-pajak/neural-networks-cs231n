@@ -79,16 +79,15 @@ public class CifarDataSet implements DataSet {
         int imgCount = 0;
         try {
             FileInputStream fis;
-            byte[] buffer = new byte[3072];
+            byte[] buffer = new byte[imageLength];
             for (File f : files) {
                 fis = new FileInputStream(f);
                 for (int j = 0; j < imagesInFile; j++) {
                     labels.putScalar(imgCount, fis.read());
-
                     fis.read(buffer);
 
                     for (int i = 0; i < imageLength; i++) {
-                        dataSet.putScalar(imgCount, i, buffer[i]);
+                        dataSet.putScalar(imgCount, i, buffer[i] & 0xFF);
                     }
                     imgCount++;
 

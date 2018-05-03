@@ -30,10 +30,10 @@ public class CifarDataLoader {
     private List<String> dataFiles;
     private List<String> testFiles;
 
-    private DataSet trainingSet;
-    private DataSet validationSet;
-    private DataSet devSet;
-    private DataSet testingSet;
+    private CifarDataSet trainingSet;
+    private CifarDataSet validationSet;
+    private CifarDataSet devSet;
+    private CifarDataSet testingSet;
 
     public CifarDataLoader() {
         this.dataFiles = new ArrayList<>();
@@ -58,7 +58,7 @@ public class CifarDataLoader {
         testingSet = testSet.getSubSet(1, numTest + 1);
     }
 
-    private DataSet loadFromFiles(Collection<String> files) {
+    private CifarDataSet loadFromFiles(Collection<String> files) {
         INDArray dataSet = Nd4j.create(IMAGES_IN_FILE * files.size(), IMAGE_LEN);
         INDArray dataSetlabels = Nd4j.create(IMAGES_IN_FILE * files.size(), 1);
         int imgCount = 0;
@@ -69,10 +69,11 @@ public class CifarDataLoader {
                 for (int j = 0 ; j < IMAGES_IN_FILE ; j++) {
                     dataSetlabels.putScalar(imgCount, fis.read());
                     if (fis.read(buffer) != -1) {
-                        for (int i = 0 ; i < IMAGE_LEN / 3 ; i += 3) {
-                            dataSet.putScalar(imgCount, i * 3, buffer[i] & 0xFF);
-                            dataSet.putScalar(imgCount, i * 3 + 1, buffer[i + 1024] & 0xFF);
-                            dataSet.putScalar(imgCount, i * 3 + 2, buffer[i + 2048] & 0xFF);
+                        for (int i = 0 ; i < IMAGE_LEN ; i += 3) {
+                            int pos = i / 3;
+                            dataSet.putScalar(imgCount, i, buffer[pos] & 0xFF);
+                            dataSet.putScalar(imgCount, i + 1, buffer[pos + 1024] & 0xFF);
+                            dataSet.putScalar(imgCount, i + 2, buffer[pos + 2048] & 0xFF);
                         }
                         imgCount++;
                     }
@@ -109,19 +110,19 @@ public class CifarDataLoader {
     }
 
     // Getters & Setters ============================================
-    public DataSet getTrainingSet() {
+    public CifarDataSet getTrainingSet() {
         return trainingSet;
     }
 
-    public DataSet getValidationSet() {
+    public CifarDataSet getValidationSet() {
         return validationSet;
     }
 
-    public DataSet getDevSet() {
+    public CifarDataSet getDevSet() {
         return devSet;
     }
 
-    public DataSet getTestingSet() {
+    public CifarDataSet getTestingSet() {
         return testingSet;
     }
 

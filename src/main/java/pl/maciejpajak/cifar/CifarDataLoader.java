@@ -1,5 +1,6 @@
 package pl.maciejpajak.cifar;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -41,6 +42,8 @@ public class CifarDataLoader {
     }
 
     public void load() {
+        StopWatch watch = new StopWatch();
+        watch.start();
         loadProperties();
         DataSet trainSet = loadFromFiles(dataFiles);
         DataSet testSet = loadFromFiles(testFiles);
@@ -56,6 +59,7 @@ public class CifarDataLoader {
 
         // The first numTest points of the original test set as the testing set.
         testingSet = testSet.getSubSet(1, numTest + 1);
+        logger.info("Loading data took {}", watch);
     }
 
     private CifarDataSet loadFromFiles(Collection<String> files) {

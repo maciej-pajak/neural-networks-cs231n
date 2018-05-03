@@ -54,7 +54,7 @@ public class SimpleNetwork {
      */
     public LearningHistory train(DataSet trainingSet, DataSet validationSet) {
 
-        LearningHistory history = new LearningHistory(config.getIterations() / loggingRate + 1);
+        LearningHistory history = new LearningHistory(config.getIterations() / loggingRate);
         int samples = trainingSet.getSize();
 
         // Run SGD to optimize the parameters

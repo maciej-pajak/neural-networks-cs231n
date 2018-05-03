@@ -1,15 +1,11 @@
 package pl.maciejpajak.cifar;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import pl.maciejpajak.util.DataSet;
 
 import java.awt.*;
 import java.awt.image.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 
 /**
  * Cifar data containing images and labels.
@@ -65,42 +61,6 @@ public class CifarDataSet implements DataSet {
         data.subiRowVector(mean);
     }
 
-    /**
-     * Loads CifarDataSet from disk.
-     *
-     * @param imagesInFile - number of images in one file.
-     * @param imageLength - length of single image
-     * @param files - files to load from.
-     * @return CifarDataSet.
-     */
-    public static CifarDataSet loadFromDisk(int imagesInFile, int imageLength, File... files) {
-        INDArray dataSet = Nd4j.create(imagesInFile * files.length, imageLength);
-        INDArray labels = Nd4j.create(imagesInFile * files.length, 1);
-        int imgCount = 0;
-        try {
-            FileInputStream fis;
-            byte[] buffer = new byte[imageLength];
-            for (File f : files) {
-                fis = new FileInputStream(f);
-                for (int j = 0; j < imagesInFile; j++) {
-                    labels.putScalar(imgCount, fis.read());
-                    fis.read(buffer);
-
-                    for (int i = 0; i < imageLength; i++) {
-                        dataSet.putScalar(imgCount, i, buffer[i] & 0xFF);
-                    }
-                    imgCount++;
-
-                }
-                fis.close();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return new CifarDataSet(dataSet, labels);
-    }
-
     @Override
     public INDArray getData() {
         return data;
@@ -134,25 +94,21 @@ public class CifarDataSet implements DataSet {
             throw new ArrayIndexOutOfBoundsException("index should be less than data set size: " + size);
         }
         DataBuffer buffer;
-        buffer = new DataBufferByte(refactor(data.getRow(imageIndex).dup().data().asInt()), data.columns());
+        buffer = new DataBufferByte(convertToByteArray(data.getRow(imageIndex).dup().data().asInt()), data.columns());
 
         //3 bytes per pixel: red, green, blue
         WritableRaster raster = Raster.createInterleavedRaster(buffer, IMAGE_WIDTH, IMAGE_HEIGHT, 3 * IMAGE_WIDTH, 3, new int[] {0, 1, 2}, null);
         ColorModel cm = new ComponentColorModel(ColorModel.getRGBdefault().getColorSpace(), false, true, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
         BufferedImage image = new BufferedImage(cm, raster, true, null);
-
         return image;
     }
 
-    private static byte[] refactor(int[] arr) {
+    private byte[] convertToByteArray(int[] arr) {
         byte[] res = new byte[3072];
-        int pos = 0;
-        for (int i = 0; i < res.length ; i += 3) {
-            pos = i / 3;
-            res[i] = (byte) arr[pos];
-            res[i + 1] = (byte) arr[1024 + pos];
-            res[i + 2] = (byte) arr[2048 + pos];
+        for (int i = 0; i < res.length ; i++) {
+            res[i] = (byte) (arr[i]);
         }
         return res;
     }
+
 }

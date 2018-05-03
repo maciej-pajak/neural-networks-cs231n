@@ -8,11 +8,13 @@ import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
+import pl.maciejpajak.util.DataSet;
 import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
 import pl.maciejpajak.classifier.LossFunction;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Random;
 
 public class CifarClassify {
@@ -27,88 +29,102 @@ public class CifarClassify {
     private static final String PATH = "/Users/mac/Downloads/cifar-10-batches-bin";
 
     public static void main(String[] args) {
-        File[] dataSetsFiles = {new File(PATH + "/data_batch_1.bin"),
-                new File(PATH + "/data_batch_2.bin"),
-                new File(PATH + "/data_batch_3.bin"),
-                new File(PATH + "/data_batch_4.bin"),
-                new File(PATH + "/data_batch_5.bin")
-        };
+//        File[] dataSetsFiles = {new File(PATH + "/data_batch_1.bin"),
+//                new File(PATH + "/data_batch_2.bin"),
+//                new File(PATH + "/data_batch_3.bin"),
+//                new File(PATH + "/data_batch_4.bin"),
+//                new File(PATH + "/data_batch_5.bin")
+//        };
+//
+//        File testDataFile = new File(PATH + "/test_batch.bin");
+//
+//        CifarDataSet trainSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, dataSetsFiles);
+//        CifarDataSet testSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, testDataFile);
+//
+//        // Preprocessing: subtract the mean image
+//        INDArray meanImage = trainSet.getMeanExample();
+//        trainSet.preprocessWithMean(meanImage);
+//        testSet.preprocessWithMean(meanImage);
+//
+//        // Split the data into train, val, and test sets. In addition create
+//        // a small development set as a subset of the training data;
+//        // this can be used for development so the code runs faster.
+//        int numTraining = 49000;
+//        int numValidation = 1000;
+//        int numTest = 10000;
+//        int numDev = 500;
+//
+//        // Validation set will be numValidation points from the original training set.
+//        CifarDataSet validationSet = trainSet.getSubSet(numTraining, numTraining + numValidation);
+//
+//        // Our training set will be the first num_train points from the original training set.
+//        CifarDataSet trainingSet = trainSet.getSubSet(1 , numTraining + 1);
+//
+//        // Development set - a small subset of the training set.
+//        CifarDataSet devSet = trainingSet.getSubSet(1, numDev + 1); // TODO change to random; mask = np.random.choice(num_training, num_dev, replace=False)
+//
+//        // The first numTest points of the original test set as the testing set.
+//        CifarDataSet testingSet = testSet.getSubSet(1, numTest + 1);
 
-        File testDataFile = new File(PATH + "/test_batch.bin");
+        CifarDataLoader loader = new CifarDataLoader();
+        loader.load();
 
-        CifarDataSet trainSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, dataSetsFiles);
-        CifarDataSet testSet = CifarDataSet.loadFromDisk(IMAGES_IN_FILE, IMAGE_LEN, testDataFile);
-
-        // Preprocessing: subtract the mean image
-        INDArray meanImage = trainSet.getMeanExample();
-        trainSet.preprocessWithMean(meanImage);
-        testSet.preprocessWithMean(meanImage);
-
-        // Split the data into train, val, and test sets. In addition create
-        // a small development set as a subset of the training data;
-        // this can be used for development so the code runs faster.
-        int numTraining = 49000;
-        int numValidation = 1000;
-        int numTest = 1000;
-        int numDev = 500;
-
-        // Validation set will be numValidation points from the original training set.
-        CifarDataSet validationSet = trainSet.getSubSet(numTraining, numTraining + numValidation);
+        CifarDataSet validationSet = loader.getValidationSet();
 
         // Our training set will be the first num_train points from the original training set.
-        CifarDataSet trainingSet = trainSet.getSubSet(1 , numTraining + 1);
+        CifarDataSet trainingSet = loader.getTrainingSet();
 
         // Development set - a small subset of the training set.
-        CifarDataSet devSet = trainingSet.getSubSet(1, numDev + 1); // TODO change to random; mask = np.random.choice(num_training, num_dev, replace=False)
+        CifarDataSet devSet = loader.getDevSet();
 
         // The first numTest points of the original test set as the testing set.
-        CifarDataSet testingSet = testSet.getSubSet(1, numTest + 1);
+        CifarDataSet testingSet = loader.getTestingSet();
 
-//        // Display images to validate
-//        ImageDisplayer imageDisplayer = new ImageDisplayer("Check images", 2,2);
-//        imageDisplayer.addImage(String.valueOf(validationSet.getLabel(0)) + " 1", validationSet.getImage(0));
-//        imageDisplayer.addImage(String.valueOf(trainingSet.getLabel(0)) + " 2", trainingSet.getImage(0));
-//        imageDisplayer.addImage(String.valueOf(devSet.getLabel(0)) + " 3", devSet.getImage(0));
-//        imageDisplayer.addImage(String.valueOf(testingSet.getLabel(0)) + " 4", testingSet.getImage(0));
-//        imageDisplayer.show();
-//
-//        // Check dimensions
-//        logger.info("validation set data : " + Arrays.toString(validationSet.getData().shape()));
-//        logger.info("validation set labels : " + Arrays.toString(validationSet.getLabels().shape()));
-//
-//        logger.info("training set data : " + Arrays.toString(trainingSet.getData().shape()));
-//        logger.info("training set labels : " + Arrays.toString(trainingSet.getLabels().shape()));
-//
-//        logger.info("dev set data : " + Arrays.toString(devSet.getData().shape()));
-//        logger.info("dev set labels : " + Arrays.toString(devSet.getLabels().shape()));
-//
-//        logger.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
-//        logger.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
+        // Display images to validate
+        ImageDisplayer imageDisplayer = new ImageDisplayer("Check images", 2,2);
+        imageDisplayer.addImage(String.valueOf(validationSet.getLabel(0)) + " 1", validationSet.getImage(0));
+        imageDisplayer.addImage(String.valueOf(trainingSet.getLabel(0)) + " 2", trainingSet.getImage(0));
+        imageDisplayer.addImage(String.valueOf(devSet.getLabel(0)) + " 3", devSet.getImage(0));
+        imageDisplayer.addImage(String.valueOf(testingSet.getLabel(0)) + " 4", testingSet.getImage(0));
+        imageDisplayer.show();
+
+        // Check dimensions
+        logger.info("validation set data : " + Arrays.toString(validationSet.getData().shape()));
+        logger.info("validation set labels : " + Arrays.toString(validationSet.getLabels().shape()));
+
+        logger.info("training set data : " + Arrays.toString(trainingSet.getData().shape()));
+        logger.info("training set labels : " + Arrays.toString(trainingSet.getLabels().shape()));
+
+        logger.info("dev set data : " + Arrays.toString(devSet.getData().shape()));
+        logger.info("dev set labels : " + Arrays.toString(devSet.getLabels().shape()));
+
+        logger.info("testing set data : " + Arrays.toString(testingSet.getData().shape()));
+        logger.info("testing set labels : " + Arrays.toString(testingSet.getLabels().shape()));
 
         //findBestParams(trainingSet, validationSet);
 
         //bestParamsCoarseSearch(devSet, validationSet);
 
-        SimpleNetwork lc = SimpleNetwork.builder()
-                .layer(3072, 100, new ReLU())
-                .layer(100, 10, new Identity())
-                .loss(new MulticlassSVMLoss())
-                .learningRate(1e-7)
-                .regularization(1e-1)
-                .iterations(2000)
-                .batchSize(256).build();
-
-        LearningHistory history = lc.train(trainingSet, validationSet);
+//        SimpleNetwork lc = SimpleNetwork.builder()
+//                .layer(3072, 100, new ReLU())
+//                .layer(100, 10, new Identity())
+//                .loss(new MulticlassSVMLoss())
+//                .learningRate(1e-7)
+//                .regularization(1e-1)
+//                .iterations(2000)
+//                .batchSize(256).build();
+//
+//        LearningHistory history = lc.train(trainingSet, validationSet);
 
 //        history.plot();
 
-//        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
-//                validationSet.getData(), validationSet.getLabels(),
-//                0.00000001, 50000, 2000, 256, LossFunction.SVM);
-//////                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
-//////                0.0000001, 50000, 5000, 16, LossFunction.SVM);
-////
-//        lc.getLearningHistory().plot();
+        LinearClassifier lc = LinearClassifier.trainNewLinearClassifier(trainingSet.getData(), trainingSet.getLabels(),
+                validationSet.getData(), validationSet.getLabels(),
+                0.00000001, 50000, 2000, 256, LossFunction.SVM);
+////                0.0000000025, 150000, 5000, 16, LossFunction.SVM);
+////                0.0000001, 50000, 5000, 16, LossFunction.SVM);
+//
+        lc.getLearningHistory().plot();
 
 //        // display template images created from weights
 //        CifarDataSet templates = new CifarDataSet(lc.getWeights().transpose(),

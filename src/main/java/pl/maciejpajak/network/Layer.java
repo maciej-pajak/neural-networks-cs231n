@@ -24,7 +24,7 @@ public class Layer {
     private INDArray scoresTmp;
 
     public Layer(int inputSize, int outputSize, ActivationFunction function, NetworkConfig config) {
-        this.weights = Nd4j.randn(inputSize, outputSize);
+        this.weights = Nd4j.randn(inputSize, outputSize).mul(0.0001);
         this.activationFunction = function;
         this.config = config;
     }
@@ -57,7 +57,8 @@ public class Layer {
         INDArray dWeights = inputTmp.transpose().mmul(dActivation);
         INDArray dInput = dActivation.mmul(weights.transpose());
         // add regularization contribution
-        dWeights.addi(weights.mul(2.0 * config.getRegularization()));
+//        dWeights.divi(inputTmp.size(0));
+//        dWeights.addi(weights.mul(2.0 * config.getRegularization()));
         // update weights
         weights.subi(dWeights.muli(config.getLearningRate()));
         // return gradient on input

@@ -1,7 +1,6 @@
 package pl.maciejpajak.network.loss;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import pl.maciejpajak.util.Nd4jHelper;
 
@@ -17,21 +16,23 @@ public class SoftmaxLoss implements ILossFunction {
         return loss;
     }
 
-    private INDArray calculateScoresArray(INDArray data, INDArray labels) {
+    public INDArray calculateScoresArray(INDArray data, INDArray labels) {
         // compute the class probabilities
         INDArray expScores = Transforms.exp(data);
         INDArray probs = expScores.divColumnVector(expScores.sum(1));
         this.probsTmp = probs;
 
         // compute the loss: average cross-entropy loss and regularization
-        INDArray correctLogProbs = Transforms.log(Nd4jHelper.getSpecifiedElements(probs, labels)).mul(-1);
+        INDArray correctLogProbs = Transforms.log(Nd4jHelper.getSpecifiedElements(probs, labels)).neg();
         return correctLogProbs;
     }
 
     @Override
     public INDArray calculateGradient(INDArray labels) {
         INDArray dScores = probsTmp;
-        Nd4jHelper.putValues(dScores, labels, Nd4jHelper.getSpecifiedElements(dScores, labels).neg().add(1.0));
+//        Nd4jHelper.putValues(dScores, labels, Nd4jHelper.getSpecifiedElements(dScores, labels).neg().add(1.0));
+        Nd4jHelper.addScalar(dScores, labels, -1.0); // update correct class probabilities // FIXME
+//        Nd4jHelper.putValues(dScores, labels, Nd4jHelper.getSpecifiedElements(dScores, labels).sub(1.0));
         return dScores;
     }
 

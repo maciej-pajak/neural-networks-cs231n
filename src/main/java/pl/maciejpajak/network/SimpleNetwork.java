@@ -3,12 +3,10 @@ package pl.maciejpajak.network;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
-import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.ILossFunction;
 import pl.maciejpajak.util.DataSet;
 
@@ -56,7 +54,7 @@ public class SimpleNetwork {
 
         LearningHistory history = new LearningHistory(config.getIterations() / loggingRate);
         int samples = trainingSet.getSize();
-
+        int iterationsPerEpoch = Math.max(trainingSet.getSize() / config.getBatchSize(), 1);
         // Run SGD to optimize the parameters
         INDArray batchSet;
         INDArray batchLabels;
@@ -92,14 +90,17 @@ public class SimpleNetwork {
             }
 
             if (i % loggingRate == 0) {
-                double valAcc;
-                if (validationSet != null) {
-                    valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
-                } else {
-                    valAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
-                }
-                history.addNextRecord(i, loss, valAcc);
-                logger.info("val_acc = {}, loss = {} ({} / {})", valAcc, loss, i, config.getIterations());
+                logger.info("loss = {} ({} / {})", loss, i, config.getIterations());
+            }
+
+//            if (i % iterationsPerEpoch == 0) {
+            if (i % loggingRate == 0) {
+
+                double valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
+                double trainAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
+//                history.addNextRecord(i, loss, valAcc);
+                config.decayLearningRate();
+                logger.info("loss = {} ({} / {}) val_acc = {}, train_acc = {}", loss, i, config.getIterations(), valAcc, trainAcc);
             }
         }
 
@@ -146,6 +147,7 @@ public class SimpleNetwork {
         private List<LayerParams> layers;
         private ILossFunction lossFunction;
         private double learningRate;
+        private double learningRateDecay;
         private double regularization;
         private int iterations;
         private int batchSize;
@@ -169,6 +171,11 @@ public class SimpleNetwork {
             return this;
         }
 
+        public Builder learningRateDecay(double learningRateDecay) {
+            this.learningRateDecay = learningRateDecay;
+            return this;
+        }
+
         public Builder regularization(double regularization) {
             this.regularization = regularization;
             return this;
@@ -189,7 +196,7 @@ public class SimpleNetwork {
                 throw new IllegalStateException("At least one defined layer is required.");
             if (lossFunction == null)
                 throw new IllegalStateException("Loss function cannot be null.");
-            return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, iterations, batchSize));
+            return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, learningRateDecay, iterations, batchSize));
         }
 
     }

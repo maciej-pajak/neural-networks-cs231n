@@ -40,9 +40,9 @@ public class CifarTwoLayerNetwork {
 
         LearningHistory history = network.train(trainingSet, validationSet);
 
-        logger.info("Training accuracy:   {}", network.checkAccuraccy(trainingSet));
-        logger.info("Validation accuracy: {}", network.checkAccuraccy(validationSet));
-        logger.info("Testing accuracy:    {}", network.checkAccuraccy(testingSet));
+        logger.info("Training accuracy:   {}", network.checkAccuracy(trainingSet));
+        logger.info("Validation accuracy: {}", network.checkAccuracy(validationSet));
+        logger.info("Testing accuracy:    {}", network.checkAccuracy(testingSet));
         history.plot();
     }
 

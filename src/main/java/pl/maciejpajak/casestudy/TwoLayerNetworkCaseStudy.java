@@ -13,6 +13,7 @@ import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
+import pl.maciejpajak.network.loss.SoftmaxLoss;
 import pl.maciejpajak.util.Nd4jHelper;
 import pl.maciejpajak.util.SimpleDataSet;
 
@@ -185,30 +186,32 @@ public class TwoLayerNetworkCaseStudy {
             }
         }
 
-//        TwoLayerNetworkCaseStudy network =
-//                new TwoLayerNetworkCaseStudy(dataSet.size(1), 100, 3, 0.01);
-//
-//        network.train(dataSet, dataLabels,0.5, 0.001,10000);
-//
-//        INDArray predicted = network.predict(dataSet);
-//        double acc = predicted.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
-//
-//        LOG.info("final accuracy = {}", acc);
+        TwoLayerNetworkCaseStudy network =
+                new TwoLayerNetworkCaseStudy(dataSet.size(1), 100, 3, 0.01);
 
-//        network.printLearningAnalysis();
+        network.train(dataSet, dataLabels,0.5, 0.001,10000);
+
+        INDArray predicted = network.predict(dataSet);
+        double acc = predicted.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
+
+        LOG.info("final accuracy = {}", acc);
+
+        network.printLearningAnalysis();
 
         SimpleNetwork simpleNetwork = SimpleNetwork.builder()
                 .layer(dataSet.size(1), 100, new ReLU())
                 .layer(100, 3, new Identity())
-                .loss(new MulticlassSVMLoss())
+                .loss(new SoftmaxLoss())
                 .learningRate(0.5)
                 .learningRateDecay(1.0)
                 .regularization(0.001)
                 .iterations(10000)
-                .batchSize(100)
+                .batchSize(300)
                 .build();
-        LearningHistory lh = simpleNetwork.train(new SimpleDataSet(dataSet, dataLabels), null);
-        LOG.info("simple network accuracy: {}", simpleNetwork.predict(dataSet).eq(dataLabels).meanNumber().doubleValue());
+        LearningHistory lh = simpleNetwork.train(new SimpleDataSet(dataSet, dataLabels), new SimpleDataSet(dataSet, dataLabels));
+        double accSimple = simpleNetwork.predict(dataSet).eq(dataLabels).meanNumber().doubleValue();
+        LOG.info("simple network accuracy: {}", accSimple);
+        LOG.info("acc difference: {}", Math.abs(acc - accSimple));
     }
 
 }

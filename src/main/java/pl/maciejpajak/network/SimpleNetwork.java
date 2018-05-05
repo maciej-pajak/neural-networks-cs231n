@@ -52,9 +52,10 @@ public class SimpleNetwork {
      */
     public LearningHistory train(DataSet trainingSet, DataSet validationSet) {
 
-        LearningHistory history = new LearningHistory(config.getIterations() / loggingRate);
         int samples = trainingSet.getSize();
         int iterationsPerEpoch = Math.max(trainingSet.getSize() / config.getBatchSize(), 1);
+        LearningHistory history = new LearningHistory(config.getIterations() / iterationsPerEpoch);
+//        LearningHistory history = new LearningHistory(config.getIterations() / loggingRate);
         // Run SGD to optimize the parameters
         INDArray batchSet;
         INDArray batchLabels;
@@ -89,16 +90,16 @@ public class SimpleNetwork {
                 layerGradient = layerGradient.get(NDArrayIndex.all(), NDArrayIndex.interval(0, layerGradient.columns() - 1));
             }
 
-            if (i % loggingRate == 0) {
-                logger.info("loss = {} ({} / {})", loss, i, config.getIterations());
-            }
+//            if (i % loggingRate == 0) {
+//                logger.info("loss = {} ({} / {})", loss, i, config.getIterations());
+//            }
 
-//            if (i % iterationsPerEpoch == 0) {
-            if (i % loggingRate == 0) {
+            if (i % iterationsPerEpoch == 0) {
+//            if (i % loggingRate == 0) {
 
                 double valAcc = validationSet == null ? 0 : predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
                 double trainAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
-//                history.addNextRecord(i, loss, valAcc);
+                history.addNextRecord(i, loss, valAcc);
                 config.decayLearningRate();
                 logger.info("loss = {} ({} / {}) val_acc = {}, train_acc = {}", loss, i, config.getIterations(), valAcc, trainAcc);
             }
@@ -118,6 +119,11 @@ public class SimpleNetwork {
             throw new IllegalStateException("Network is not trained yet.");
         }
         return predictLabels(data);
+    }
+
+    public double checkAccuracy(DataSet dataSet) {
+        return  predict(dataSet.getData()).eq(dataSet.getLabels()).meanNumber().doubleValue();
+
     }
 
     private INDArray predictLabels(INDArray data) {

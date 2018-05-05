@@ -1,5 +1,7 @@
 package pl.maciejpajak.cifar;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
@@ -7,6 +9,8 @@ import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.SoftmaxLoss;
 
 public class CifarTwoLayerNetwork {
+
+    public static final Logger logger = LoggerFactory.getLogger(CifarTwoLayerNetwork.class);
 
     public static void main(String[] args) {
         CifarDataLoader loader = new CifarDataLoader();
@@ -27,16 +31,19 @@ public class CifarTwoLayerNetwork {
                 .layer(3072, 100, new ReLU())
                 .layer(100, 10, new Identity())
                 .loss(new SoftmaxLoss())
-                .learningRate(1e-7)
+                .learningRate(1e-4)
                 .learningRateDecay(0.95)
-                .regularization(1e-4)
+//                .regularization(0.1)
+                .regularization(0.01)
                 .iterations(1000)
-                .batchSize(200).build();
+                .batchSize(256).build();
 
-        LearningHistory history = network.train(devSet, validationSet);
+        LearningHistory history = network.train(trainingSet, validationSet);
 
+        logger.info("Training accuracy:   {}", network.checkAccuraccy(trainingSet));
+        logger.info("Validation accuracy: {}", network.checkAccuraccy(validationSet));
+        logger.info("Testing accuracy:    {}", network.checkAccuraccy(testingSet));
         history.plot();
-
     }
 
 }

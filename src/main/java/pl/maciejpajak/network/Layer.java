@@ -57,8 +57,8 @@ public class Layer {
         INDArray dWeights = inputTmp.transpose().mmul(dActivation);
         INDArray dInput = dActivation.mmul(weights.transpose());
         // add regularization contribution
-//        dWeights.divi(inputTmp.size(0));
-//        dWeights.addi(weights.mul(2.0 * config.getRegularization()));
+        dWeights.divi(inputTmp.size(0));
+        dWeights.addi(weights.mul(2.0 * config.getRegularization()));
         // update weights
         weights.subi(dWeights.muli(config.getLearningRate()));
         // return gradient on input
@@ -66,7 +66,7 @@ public class Layer {
     }
 
     public double getRegularizationLoss() {
-        return Transforms.pow(weights, 2).mul(config.getRegularization()).sumNumber().doubleValue();
+        return Transforms.pow(weights, 2).sumNumber().doubleValue() * config.getRegularization();
     }
 
 }

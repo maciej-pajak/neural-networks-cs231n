@@ -20,7 +20,9 @@ public enum LossFunction {
             INDArray correctClassesScore = Nd4jHelper.getSpecifiedElements(scores, batchLabels);
             INDArray margins = Transforms.max(scores.subColumnVector(correctClassesScore).add(1.0),0);
 
-            loss = margins.sumNumber().doubleValue() - samples;
+            Nd4jHelper.putScalar(margins, batchLabels, 0);
+            loss = margins.sumNumber().doubleValue();
+//            loss = margins.sumNumber().doubleValue() - samples;
             loss /= samples;
             loss += reg * Transforms.pow(weights, 2).sumNumber().doubleValue();
 

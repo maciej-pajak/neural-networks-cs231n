@@ -96,7 +96,7 @@ public class SimpleNetwork {
 //            if (i % iterationsPerEpoch == 0) {
             if (i % loggingRate == 0) {
 
-                double valAcc = predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
+                double valAcc = validationSet == null ? 0 : predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
                 double trainAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
 //                history.addNextRecord(i, loss, valAcc);
                 config.decayLearningRate();
@@ -196,6 +196,8 @@ public class SimpleNetwork {
                 throw new IllegalStateException("At least one defined layer is required.");
             if (lossFunction == null)
                 throw new IllegalStateException("Loss function cannot be null.");
+            if (learningRateDecay == 0)
+                learningRateDecay = 1.0;
             return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, learningRateDecay, iterations, batchSize));
         }
 

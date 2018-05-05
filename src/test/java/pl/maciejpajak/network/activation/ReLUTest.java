@@ -34,6 +34,7 @@ public class ReLUTest {
 
         // when
         ReLU relu = new ReLU();
+        relu.process(random); // required to store tmp
         INDArray result = relu.backprop(random, grad);
 
         // then

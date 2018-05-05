@@ -19,12 +19,12 @@ public class MulticlassSVMLoss implements ILossFunction {
         int samples = data.size(0);
 
         INDArray correctClassesScore = Nd4jHelper.getSpecifiedElements(data, labels);
-        INDArray score = Transforms.max(data.subColumnVector(correctClassesScore).add(1.0),0);
+        INDArray margins = Transforms.max(data.subColumnVector(correctClassesScore).add(1.0),0);
 
         // set correct class score to 0
-        Nd4jHelper.putScalar(score, labels, 0);
-        this.scoresTmp = score;
-        double loss = score.sumNumber().doubleValue();
+//        Nd4jHelper.putScalar(margins, labels, 0);
+        this.scoresTmp = margins;
+        double loss = margins.sumNumber().doubleValue() - samples;
 
         if (average) {
             loss /= samples;

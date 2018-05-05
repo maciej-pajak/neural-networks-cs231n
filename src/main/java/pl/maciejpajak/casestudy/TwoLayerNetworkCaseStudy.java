@@ -185,23 +185,24 @@ public class TwoLayerNetworkCaseStudy {
             }
         }
 
-        TwoLayerNetworkCaseStudy network =
-                new TwoLayerNetworkCaseStudy(dataSet.size(1), 100, 3, 0.01);
+//        TwoLayerNetworkCaseStudy network =
+//                new TwoLayerNetworkCaseStudy(dataSet.size(1), 100, 3, 0.01);
+//
+//        network.train(dataSet, dataLabels,0.5, 0.001,10000);
+//
+//        INDArray predicted = network.predict(dataSet);
+//        double acc = predicted.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
+//
+//        LOG.info("final accuracy = {}", acc);
 
-        network.train(dataSet, dataLabels,0.5, 0.001,10000);
-
-        INDArray predicted = network.predict(dataSet);
-        double acc = predicted.eq(dataLabels).sumNumber().doubleValue() / dataLabels.length();
-
-        LOG.info("final accuracy = {}", acc);
-
-        network.printLearningAnalysis();
+//        network.printLearningAnalysis();
 
         SimpleNetwork simpleNetwork = SimpleNetwork.builder()
                 .layer(dataSet.size(1), 100, new ReLU())
                 .layer(100, 3, new Identity())
                 .loss(new MulticlassSVMLoss())
                 .learningRate(0.5)
+                .learningRateDecay(1.0)
                 .regularization(0.001)
                 .iterations(10000)
                 .batchSize(100)

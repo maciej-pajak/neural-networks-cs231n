@@ -10,10 +10,7 @@ import pl.maciejpajak.util.DataSet;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class CifarDataLoader {
 
@@ -60,6 +57,20 @@ public class CifarDataLoader {
         // The first numTest points of the original test set as the testing set.
         testingSet = testSet.getSubSet(1, numTest + 1);
         logger.info("Loading data took {}", watch);
+    }
+
+    public void logShapesInfo() {
+        logger.info("validation set data   : {}", Arrays.toString(validationSet.getData().shape()));
+        logger.info("validation set labels : {}", Arrays.toString(validationSet.getLabels().shape()));
+
+        logger.info("training set data     : {}", Arrays.toString(trainingSet.getData().shape()));
+        logger.info("training set labels   : {}", Arrays.toString(trainingSet.getLabels().shape()));
+
+        logger.info("dev set data          : {}", Arrays.toString(devSet.getData().shape()));
+        logger.info("dev set labels        : {}", Arrays.toString(devSet.getLabels().shape()));
+
+        logger.info("testing set data      : {}", Arrays.toString(testingSet.getData().shape()));
+        logger.info("testing set labels    : {}", Arrays.toString(testingSet.getLabels().shape()));
     }
 
     private CifarDataSet loadFromFiles(Collection<String> files) {

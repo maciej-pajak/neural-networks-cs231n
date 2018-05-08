@@ -6,8 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.util.Nd4jHelper;
 
-import java.util.Arrays;
-
 public class MulticlassSVMLoss implements ILossFunction {
 
     private static final Logger logger = LoggerFactory.getLogger(MulticlassSVMLoss.class);
@@ -21,10 +19,11 @@ public class MulticlassSVMLoss implements ILossFunction {
         INDArray correctClassesScore = Nd4jHelper.getSpecifiedElements(data, labels);
         INDArray margins = Transforms.max(data.subColumnVector(correctClassesScore).add(1.0),0);
 
-        // set correct class score to 0
-//        Nd4jHelper.putScalar(margins, labels, 0);
+        // set correct class margin to 0
+        Nd4jHelper.putScalar(margins, labels, 0);
+
         this.scoresTmp = margins;
-        double loss = margins.sumNumber().doubleValue() - samples;
+        double loss = margins.sumNumber().doubleValue();
 
         if (average) {
             loss /= samples;

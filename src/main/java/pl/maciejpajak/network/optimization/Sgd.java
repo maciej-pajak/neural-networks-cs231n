@@ -1,14 +1,18 @@
 package pl.maciejpajak.network.optimization;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import pl.maciejpajak.network.NetworkConfig;
 
 public class Sgd implements Updater {
 
-    private final NetworkConfig config;
+    private final UpdaterConfig config;
 
-    public Sgd(NetworkConfig config) {
+    public Sgd(UpdaterConfig config) {
         this.config = config;
+    }
+
+    @Override
+    public void initialize(INDArray x) {
+        // unused in sgd
     }
 
     @Override

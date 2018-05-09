@@ -6,6 +6,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.network.activation.ActivationFunction;
+import pl.maciejpajak.network.initialization.WeightsInit;
 import pl.maciejpajak.network.optimization.Updater;
 
 /**
@@ -23,12 +24,11 @@ public class Layer {
     private INDArray inputTmp;
     private INDArray scoresTmp;
 
-    public Layer(int inputSize, int outputSize, ActivationFunction function, NetworkConfig config) {
-        this.weights = Nd4j.randn(inputSize, outputSize).mul(0.0001);
+    public Layer(int inputSize, int outputSize, ActivationFunction function, NetworkConfig config, WeightsInit weightsInit) {
+        this.weights = weightsInit.initialize(new int[]{inputSize, outputSize});
         this.activationFunction = function;
         this.config = config;
         this.updater = config.getUpdater();
-//        this.updater.initialize(weights);
     }
 
     public INDArray forwardPass(INDArray input, boolean training) {

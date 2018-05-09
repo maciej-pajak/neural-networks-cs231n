@@ -1,5 +1,6 @@
 package pl.maciejpajak.network;
 
+import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
+import pl.maciejpajak.network.initialization.WeightsInit;
 import pl.maciejpajak.network.loss.ILossFunction;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.Updater;
@@ -38,7 +40,7 @@ public class SimpleNetwork {
         this.config = config;
         for (int i = 0 ; i < layers.size() ; i++) {
             LayerParams params = layers.get(i);
-            this.layers.add(new Layer(params.inputSize, params.outputSize, params.function, config));
+            this.layers.add(new Layer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
         }
         this.lossFunction = lossFunction;
     }
@@ -166,8 +168,8 @@ public class SimpleNetwork {
             this.layers = new ArrayList<>();
         }
 
-        public Builder layer(int inputSize, int outputSize, ActivationFunction activation) {
-            layers.add(new LayerParams(inputSize + 1, outputSize, activation)); // +1 for bias
+        public Builder layer(int inputSize, int outputSize, ActivationFunction activation, WeightsInit weightsInit) {
+            layers.add(new LayerParams(inputSize + 1, outputSize, activation, weightsInit)); // +1 for bias
             return this;
         }
 
@@ -221,15 +223,12 @@ public class SimpleNetwork {
     /**
      * Data class used to store single layer parameters.
      */
+    @AllArgsConstructor
     private static class LayerParams { // is this acceptable solution?
         private int inputSize;
         private int outputSize;
         private ActivationFunction function;
-        private LayerParams(int inputSize, int outputSize, ActivationFunction function) {
-            this.inputSize = inputSize;
-            this.outputSize = outputSize;
-            this.function = function;
-        }
+        private WeightsInit weightsInit;
     }
 
     // Util ========================================================================================

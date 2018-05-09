@@ -7,6 +7,8 @@ import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.SoftmaxLoss;
+import pl.maciejpajak.network.optimization.ParamUpdate;
+import pl.maciejpajak.network.optimization.UpdaterConfig;
 
 public class CifarTwoLayerNetwork {
 
@@ -31,7 +33,9 @@ public class CifarTwoLayerNetwork {
                 .layer(3072, 100, new ReLU())
                 .layer(100, 10, new Identity())
                 .loss(new SoftmaxLoss())
-                .learningRate(1e-4)
+                .updater(ParamUpdate.SGD, UpdaterConfig.builder()
+                        .learningRate(1e-4).build())
+//                .learningRate(1e-4)
                 .learningRateDecay(0.95)
 //                .regularization(0.1)
                 .regularization(0.01)

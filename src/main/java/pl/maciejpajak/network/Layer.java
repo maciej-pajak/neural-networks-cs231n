@@ -6,8 +6,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.maciejpajak.network.activation.ActivationFunction;
-
-import java.util.Arrays;
+import pl.maciejpajak.network.optimization.Updater;
 
 /**
  * Class representing single layer in a network.
@@ -19,6 +18,7 @@ public class Layer {
     private final INDArray weights;
     private final ActivationFunction activationFunction;
     private final NetworkConfig config;
+    private final Updater updater;
 
     private INDArray inputTmp;
     private INDArray scoresTmp;
@@ -27,18 +27,13 @@ public class Layer {
         this.weights = Nd4j.randn(inputSize, outputSize).mul(0.0001);
         this.activationFunction = function;
         this.config = config;
+        this.updater = config.getUpdater();
+//        this.updater.initialize(weights);
     }
 
-//    public Layer(SimpleNetwork.LayerParams params) {
-//        this.weights = Nd4j.randn(params.inputSize, params.outputSize);
-//        this.activationFunction = params.function;
-//    }
-
     public INDArray forwardPass(INDArray input, boolean training) {
-        logger.debug("forward pass input shape   : {}", Arrays.toString(input.shape()));
-        logger.debug("forward pass weights shape : {}", Arrays.toString(weights.shape()));
         INDArray scores = input.mmul(weights);
-        logger.debug("forward pass scores shape  : {}", Arrays.toString(scores.shape()));
+
         if (training) {
             this.inputTmp = input;
             this.scoresTmp = scores;
@@ -47,12 +42,9 @@ public class Layer {
     }
 
     public INDArray backprop(INDArray previousGradient) {
-        logger.debug("previous gradient shape : {}", Arrays.toString(previousGradient.shape()));
         // backprop activation function
         INDArray dActivation = activationFunction.backprop(scoresTmp, previousGradient);
-        logger.debug("dActivation shape       : {}", Arrays.toString(dActivation.shape()));
-        logger.debug("inputTmp shape          : {}", Arrays.toString(inputTmp.shape()));
-        logger.debug("weights shape           : {}", Arrays.toString(weights.shape()));
+
         // backprop dot
         INDArray dWeights = inputTmp.transpose().mmul(dActivation);
         INDArray dInput = dActivation.mmul(weights.transpose());
@@ -60,7 +52,8 @@ public class Layer {
         dWeights.divi(inputTmp.size(0));
         dWeights.addi(weights.mul(2.0 * config.getRegularization()));
         // update weights
-        weights.subi(dWeights.muli(config.getLearningRate()));
+        updater.update(weights, dWeights);
+//        weights.subi(dWeights.muli(config.getLearningRate()));
         // return gradient on input
         return dInput;
     }

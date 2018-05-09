@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
 import pl.maciejpajak.network.loss.ILossFunction;
+import pl.maciejpajak.network.optimization.ParamUpdate;
+import pl.maciejpajak.network.optimization.Updater;
+import pl.maciejpajak.network.optimization.UpdaterConfig;
 import pl.maciejpajak.util.DataSet;
 
 import java.util.ArrayList;
@@ -100,7 +103,7 @@ public class SimpleNetwork {
                 double valAcc = validationSet == null ? 0 : predictLabels(validationSet.getData()).eq(validationSet.getLabels()).meanNumber().doubleValue();
                 double trainAcc = predictLabels(batchSet).eq(batchLabels).meanNumber().doubleValue();
                 history.addNextRecord(i, loss, valAcc);
-                config.decayLearningRate();
+                config.decayLearningRate(); // FIXME now with UpdaterConfig this will not work
                 logger.info("loss = {} ({} / {}) val_acc = {}, train_acc = {}", loss, i, config.getIterations(), valAcc, trainAcc);
             }
         }
@@ -157,6 +160,7 @@ public class SimpleNetwork {
         private double regularization;
         private int iterations;
         private int batchSize;
+        private Updater updater;
 
         private Builder() {
             this.layers = new ArrayList<>();
@@ -197,6 +201,11 @@ public class SimpleNetwork {
             return this;
         }
 
+        public Builder updater(ParamUpdate updater, UpdaterConfig config) {
+            this.updater = updater.getUpdater(config);
+            return this;
+        }
+
         public SimpleNetwork build() {
             if (layers.isEmpty())
                 throw new IllegalStateException("At least one defined layer is required.");
@@ -204,7 +213,7 @@ public class SimpleNetwork {
                 throw new IllegalStateException("Loss function cannot be null.");
             if (learningRateDecay == 0)
                 learningRateDecay = 1.0;
-            return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, learningRateDecay, iterations, batchSize));
+            return new SimpleNetwork(layers, lossFunction, new NetworkConfig(regularization, learningRate, learningRateDecay, iterations, batchSize, updater));
         }
 
     }

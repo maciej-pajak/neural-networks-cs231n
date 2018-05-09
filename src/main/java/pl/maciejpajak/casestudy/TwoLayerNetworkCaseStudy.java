@@ -14,6 +14,8 @@ import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.activation.ReLU;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.network.loss.SoftmaxLoss;
+import pl.maciejpajak.network.optimization.ParamUpdate;
+import pl.maciejpajak.network.optimization.UpdaterConfig;
 import pl.maciejpajak.util.Nd4jHelper;
 import pl.maciejpajak.util.SimpleDataSet;
 
@@ -202,7 +204,9 @@ public class TwoLayerNetworkCaseStudy {
                 .layer(dataSet.size(1), 100, new ReLU())
                 .layer(100, 3, new Identity())
                 .loss(new SoftmaxLoss())
-                .learningRate(0.5)
+                .updater(ParamUpdate.SGD, UpdaterConfig.builder()
+                        .learningRate(0.5).build())
+//                .learningRate(0.5)
                 .learningRateDecay(1.0)
                 .regularization(0.001)
                 .iterations(10000)

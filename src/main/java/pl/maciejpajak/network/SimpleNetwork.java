@@ -85,7 +85,7 @@ public class SimpleNetwork {
             logger.debug("batchLabels shape : {}", Arrays.toString(batchLabels.shape()));
             logger.debug("layerResult shape : {}", Arrays.toString(layerResult.shape()));
             double loss = lossFunction.calculateScore(layerResult, batchLabels, true);
-            for (BasicLayer l : layers) {
+            for (Layer l : layers) {
                 loss += l.getRegularizationLoss();
             }
             // gradient ==========

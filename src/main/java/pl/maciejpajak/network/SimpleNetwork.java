@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
 import pl.maciejpajak.network.initialization.WeightsInit;
+import pl.maciejpajak.network.layer.BasicLayer;
+import pl.maciejpajak.network.layer.Layer;
 import pl.maciejpajak.network.loss.ILossFunction;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.Updater;
@@ -40,7 +42,7 @@ public class SimpleNetwork {
         this.config = config;
         for (int i = 0 ; i < layers.size() ; i++) {
             LayerParams params = layers.get(i);
-            this.layers.add(new Layer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
+            this.layers.add(new BasicLayer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
         }
         this.lossFunction = lossFunction;
     }
@@ -83,7 +85,7 @@ public class SimpleNetwork {
             logger.debug("batchLabels shape : {}", Arrays.toString(batchLabels.shape()));
             logger.debug("layerResult shape : {}", Arrays.toString(layerResult.shape()));
             double loss = lossFunction.calculateScore(layerResult, batchLabels, true);
-            for (Layer l : layers) {
+            for (BasicLayer l : layers) {
                 loss += l.getRegularizationLoss();
             }
             // gradient ==========

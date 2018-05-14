@@ -8,6 +8,7 @@ import pl.maciejpajak.network.NetworkConfig;
 import pl.maciejpajak.network.activation.ActivationFunction;
 import pl.maciejpajak.network.initialization.WeightsInit;
 import pl.maciejpajak.network.optimization.Updater;
+import pl.maciejpajak.network.regularization.Regularization;
 
 /**
  * Class representing single layer in a network.
@@ -20,15 +21,17 @@ public class BasicLayer implements Layer {
     private final ActivationFunction activationFunction;
     private final NetworkConfig config;
     private final Updater updater;
+    private final Regularization regularization;
 
     private INDArray inputTmp;
     private INDArray scoresTmp;
 
-    public BasicLayer(int inputSize, int outputSize, ActivationFunction function, NetworkConfig config, WeightsInit weightsInit) {
+    public BasicLayer(int inputSize, int outputSize, ActivationFunction function, NetworkConfig config, WeightsInit weightsInit, Regularization regularization) {
         this.weights = weightsInit.initialize(new int[]{inputSize, outputSize});
         this.activationFunction = function;
         this.config = config;
         this.updater = config.getUpdater();
+        this.regularization = regularization;
     }
 
     @Override
@@ -61,7 +64,7 @@ public class BasicLayer implements Layer {
     }
 
     public double getRegularizationLoss() {
-        return Transforms.pow(weights, 2).sumNumber().doubleValue() * config.getRegularization();
+        return regularization.calcRegLoss(weights) * config.getRegularization();
     }
 
 }

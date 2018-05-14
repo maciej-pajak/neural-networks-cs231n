@@ -7,7 +7,9 @@ import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.SimpleNetwork;
 import pl.maciejpajak.network.activation.Identity;
 import pl.maciejpajak.network.activation.ReLU;
+import pl.maciejpajak.network.initialization.WeightsInit;
 import pl.maciejpajak.network.loss.MulticlassSVMLoss;
+import pl.maciejpajak.network.regularization.Regularization;
 import pl.maciejpajak.util.DataSet;
 import pl.maciejpajak.util.ImageDisplayer;
 import pl.maciejpajak.classifier.LinearClassifier;
@@ -48,7 +50,7 @@ public class CifarClassify {
         imageDisplayer.show();
 
         SimpleNetwork oneLayerNetwork = SimpleNetwork.builder()
-                .layer(3072, 10, new Identity())
+                .layer(3072, 10, new Identity(), WeightsInit.SMALL_RANDOM, Regularization.L2)
                 .loss(new MulticlassSVMLoss())
                 .learningRate(1e-7)
                 .regularization(5e4)

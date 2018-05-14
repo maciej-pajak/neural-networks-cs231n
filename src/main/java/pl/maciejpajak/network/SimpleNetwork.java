@@ -15,6 +15,7 @@ import pl.maciejpajak.network.loss.ILossFunction;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.Updater;
 import pl.maciejpajak.network.optimization.UpdaterConfig;
+import pl.maciejpajak.network.regularization.Regularization;
 import pl.maciejpajak.util.DataSet;
 
 import java.util.ArrayList;
@@ -170,8 +171,8 @@ public class SimpleNetwork {
             this.layers = new ArrayList<>();
         }
 
-        public Builder layer(int inputSize, int outputSize, ActivationFunction activation, WeightsInit weightsInit) {
-            layers.add(new LayerParams(inputSize + 1, outputSize, activation, weightsInit)); // +1 for bias
+        public Builder layer(int inputSize, int outputSize, ActivationFunction activation, WeightsInit weightsInit, Regularization regularization) {
+            layers.add(new LayerParams(inputSize + 1, outputSize, activation, weightsInit, regularization)); // +1 for bias
             return this;
         }
 
@@ -231,6 +232,7 @@ public class SimpleNetwork {
         private int outputSize;
         private ActivationFunction function;
         private WeightsInit weightsInit;
+        private Regularization regularization;
     }
 
     // Util ========================================================================================

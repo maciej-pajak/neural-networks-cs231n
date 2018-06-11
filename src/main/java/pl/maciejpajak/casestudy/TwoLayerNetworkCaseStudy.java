@@ -17,6 +17,7 @@ import pl.maciejpajak.network.loss.MulticlassSVMLoss;
 import pl.maciejpajak.network.loss.SoftmaxLoss;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.UpdaterConfig;
+import pl.maciejpajak.network.regularization.Regularization;
 import pl.maciejpajak.util.Nd4jHelper;
 import pl.maciejpajak.util.SimpleDataSet;
 
@@ -202,8 +203,8 @@ public class TwoLayerNetworkCaseStudy {
         network.printLearningAnalysis();
 
         SimpleNetwork simpleNetwork = SimpleNetwork.builder()
-                .layer(dataSet.size(1), 100, new ReLU(), WeightsInit.SMALL_RANDOM)
-                .layer(100, 3, new Identity(), WeightsInit.SMALL_RANDOM)
+                .layer(dataSet.size(1), 100, new ReLU(), WeightsInit.SMALL_RANDOM, Regularization.L2)
+                .layer(100, 3, new Identity(), WeightsInit.SMALL_RANDOM, Regularization.L2)
                 .loss(new SoftmaxLoss())
                 .updater(ParamUpdate.SGD, UpdaterConfig.builder()
                         .learningRate(0.5).build())

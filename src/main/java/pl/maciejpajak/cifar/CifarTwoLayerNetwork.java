@@ -10,6 +10,7 @@ import pl.maciejpajak.network.initialization.WeightsInit;
 import pl.maciejpajak.network.loss.SoftmaxLoss;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.UpdaterConfig;
+import pl.maciejpajak.network.regularization.Regularization;
 
 public class CifarTwoLayerNetwork {
 
@@ -31,8 +32,8 @@ public class CifarTwoLayerNetwork {
         CifarDataSet testingSet = loader.getTestingSet();
 
         SimpleNetwork network = SimpleNetwork.builder()
-                .layer(3072, 100, new ReLU(), WeightsInit.SMALL_RANDOM)
-                .layer(100, 10, new Identity(), WeightsInit.SMALL_RANDOM)
+                .layer(3072, 100, new ReLU(), WeightsInit.SMALL_RANDOM, Regularization.L2)
+                .layer(100, 10, new Identity(), WeightsInit.SMALL_RANDOM, Regularization.L2)
                 .loss(new SoftmaxLoss())
                 .updater(ParamUpdate.SGD, UpdaterConfig.builder()
                         .learningRate(1e-4).build())

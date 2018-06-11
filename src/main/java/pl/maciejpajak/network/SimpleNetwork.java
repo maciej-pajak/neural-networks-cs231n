@@ -9,10 +9,13 @@ import org.slf4j.LoggerFactory;
 import pl.maciejpajak.classifier.LearningHistory;
 import pl.maciejpajak.network.activation.ActivationFunction;
 import pl.maciejpajak.network.initialization.WeightsInit;
+import pl.maciejpajak.network.layer.BasicLayer;
+import pl.maciejpajak.network.layer.Layer;
 import pl.maciejpajak.network.loss.ILossFunction;
 import pl.maciejpajak.network.optimization.ParamUpdate;
 import pl.maciejpajak.network.optimization.Updater;
 import pl.maciejpajak.network.optimization.UpdaterConfig;
+import pl.maciejpajak.network.regularization.Regularization;
 import pl.maciejpajak.util.DataSet;
 
 import java.util.ArrayList;
@@ -40,7 +43,7 @@ public class SimpleNetwork {
         this.config = config;
         for (int i = 0 ; i < layers.size() ; i++) {
             LayerParams params = layers.get(i);
-            this.layers.add(new Layer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
+            this.layers.add(new BasicLayer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
         }
         this.lossFunction = lossFunction;
     }
@@ -164,8 +167,8 @@ public class SimpleNetwork {
             this.layers = new ArrayList<>();
         }
 
-        public Builder layer(int inputSize, int outputSize, ActivationFunction activation, WeightsInit weightsInit) {
-            layers.add(new LayerParams(inputSize + 1, outputSize, activation, weightsInit)); // +1 for bias
+        public Builder layer(int inputSize, int outputSize, ActivationFunction activation, WeightsInit weightsInit, Regularization regularization) {
+            layers.add(new LayerParams(inputSize + 1, outputSize, activation, weightsInit, regularization)); // +1 for bias
             return this;
         }
 
@@ -225,6 +228,7 @@ public class SimpleNetwork {
         private int outputSize;
         private ActivationFunction function;
         private WeightsInit weightsInit;
+        private Regularization regularization;
     }
 
     // Util ========================================================================================

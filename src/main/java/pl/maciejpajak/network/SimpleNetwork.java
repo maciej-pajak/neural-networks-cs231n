@@ -49,10 +49,6 @@ public class SimpleNetwork {
      * Performs training of this neural network with provided training data and parameters.
      * @param trainingSet   data set of training examples.
      * @param validationSet data set of validation examples.
-//     * @param learningRate  learning rate.
-//     * @param reg           regularization strength.
-//     * @param iterations    number of iterations.
-//     * @param batchSize     batch size for SGD.
      * @return              learning history for this network.
      */
     public LearningHistory train(DataSet trainingSet, DataSet validationSet) {

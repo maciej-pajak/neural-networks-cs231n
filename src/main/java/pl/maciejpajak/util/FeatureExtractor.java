@@ -32,6 +32,7 @@ public class FeatureExtractor {
             }
         };
 
+
         abstract INDArray extract(INDArray data);
     }
 }

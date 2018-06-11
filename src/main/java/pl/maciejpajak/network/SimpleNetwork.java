@@ -43,7 +43,7 @@ public class SimpleNetwork {
         this.config = config;
         for (int i = 0 ; i < layers.size() ; i++) {
             LayerParams params = layers.get(i);
-            this.layers.add(new BasicLayer(params.inputSize, params.outputSize, params.function, config, params.weightsInit));
+            this.layers.add(new BasicLayer(params.inputSize, params.outputSize, params.function, config, params.weightsInit, params.regularization));
         }
         this.lossFunction = lossFunction;
     }
